@@ -201,7 +201,8 @@ def get_llm():
     if not config.GOOGLE_API_KEY:
         raise UserError("The assistant is not configured yet: add GOOGLE_API_KEY (your Gemini key) to the .env file.")
     from langchain_google_genai import ChatGoogleGenerativeAI
-    return ChatGoogleGenerativeAI(model=config.GEMINI_MODEL, google_api_key=config.GOOGLE_API_KEY,
+    # Gemini's v1 endpoint rejects function calling; the assistant requires tools.
+    return ChatGoogleGenerativeAI(model=config.GEMINI_MODEL, google_api_key=config.GOOGLE_API_KEY, api_version="v1beta",
                                   temperature=0, max_retries=1, timeout=45)
 
 
