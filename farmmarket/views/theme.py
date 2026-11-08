@@ -16,6 +16,13 @@ ICONS = {
     "bars": '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
     "arrow": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
     "arrow_up_right": '<path d="M7 17 17 7"/><path d="M7 7h10v10"/>',
+    "dashboard": '<rect x="3" y="3" width="6" height="8" rx="1"/><rect x="15" y="3" width="6" height="5" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="12" width="6" height="9" rx="1"/>',
+    "location_on": '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+    "agriculture": '<path d="m3 21 18-18M7 17c-5 0-5-5-5-5 5 0 5 5 5 5zM11 13c-5 0-5-5-5-5 5 0 5 5 5 5zM15 9c-5 0-5-5-5-5 5 0 5 5 5 5zM7 17c0 5 5 5 5 5 0-5-5-5-5-5zM11 13c0 5 5 5 5 5 0-5-5-5-5-5zM15 9c0 5 5 5 5 5 0-5-5-5-5-5z"/>',
+    "image": '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+    "alt_route": '<circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16V3M6 13c0-5 5-8 9-8"/>',
+    "search": '<circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/>',
+    "auto_awesome": '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3zM20 2v4M18 4h4M4 18v4M2 20h4"/>',
 }
 
 
@@ -52,19 +59,28 @@ h1, h2, h3, [data-testid="stHeading"] h1, [data-testid="stHeading"] h2, [data-te
 .block-container > div > div > [data-testid="stCaptionContainer"]:first-of-type {{ margin-bottom: 1.2rem; padding-bottom: 1.2rem; border-bottom: 1px solid {BORDER}; }}
 
 /* sidebar */
-[data-testid="stSidebar"] {{ background: {CARD}; border-right: 1px solid {BORDER}; }}
+[data-testid="stSidebar"] {{ background: {CARD}; border-right: 1px solid #d9e0dc; border-radius: 18px 0 0 0; }}
 [data-testid="stSidebar"] > div:first-child {{ padding-top: .5rem; }}
-.brand {{ display: flex; align-items: center; gap: .8rem; margin: .4rem 0 1.8rem; }}
-.brand .logo {{ width: 46px; height: 46px; border-radius: 12px; background: {GREEN} url({icon_uri('sprout', '#ffffff')}) center/26px no-repeat; flex: none; }}
-.brand .name {{ font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.35rem; color: {GREEN_DK}; line-height: 1.05; }}
-.wslabel {{ font-size: .74rem; letter-spacing: .14em; font-weight: 600; color: {MUTED}; margin: 0 0 .5rem .3rem; text-transform: uppercase; }}
-[data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] {{ gap: .15rem; }}
-[data-testid="stSidebar"] [data-testid="stRadioOption"] {{ width: 100%; padding: .62rem .8rem; border-radius: 10px; cursor: pointer; transition: background .15s; }}
-[data-testid="stSidebar"] [data-testid="stRadioOption"]:hover {{ background: #eef3ee; }}
-[data-testid="stSidebar"] [data-testid="stRadioOption"] > div > div:first-child:not([data-testid]) {{ display: none; }}
-[data-testid="stSidebar"] [data-testid="stRadioOption"] p {{ font-size: 1rem; color: #3c4a41; font-weight: 500; }}
-[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] {{ background: #e1efe6; }}
-[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] p {{ color: {GREEN_DK}; font-weight: 600; }}
+.brand {{ display: flex; align-items: center; gap: .9rem; margin: .4rem .6rem 2rem; }}
+.brand .logo {{ width: 46px; height: 46px; border-radius: 12px; background: #00643d url({icon_uri('sprout', '#ffffff')}) center/28px no-repeat; flex: none; }}
+.brand .name {{ font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.5rem; color: #005a36; line-height: 1.15; }}
+.wslabel {{ font-size: .8rem; letter-spacing: .11em; font-weight: 600; color: #5c6862; margin: 0 .9rem .7rem; text-transform: uppercase; }}
+[data-testid="stSidebar"] [data-testid="stElementContainer"]:has(> [data-testid="stRadio"]),
+[data-testid="stSidebar"] [data-testid="stRadio"] {{ width: 100%; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] {{ gap: .3rem; min-height: calc(100dvh - 12rem); justify-content: flex-start; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] {{ box-sizing: border-box; width: 100%; margin: 0; min-height: 54px; padding: .85rem 1rem; border-radius: 9px; cursor: pointer; transition: background .15s; align-items: center; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:hover {{ background: #eef5f1; }}
+/* Keep native radio inputs accessible; hide only their decorative circles. */
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {{ display: none; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div:last-child {{ margin: 0; padding: 0; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] p {{ display: flex; align-items: center; gap: .9rem; margin: 0; font-size: 1rem; line-height: 1.4; color: #606c65; font-weight: 500; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:has(input:checked) {{ background: #ddf1e8; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:has(input:checked) p {{ color: #004c30; font-weight: 600; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:has(input:focus-visible) {{ outline: 2px solid #00643d; outline-offset: 2px; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] span[role="img"] {{ width: 20px; height: 20px; flex: none; font-size: 20px; line-height: 1; }}
+{''.join(f'''[data-testid="stSidebar"] [data-testid="stRadio"] span[aria-label="{name} icon"] {{ font-size: 0 !important; background: url({icon_uri(name, '#606c65')}) center/20px no-repeat; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) span[aria-label="{name} icon"] {{ background-image: url({icon_uri(name, '#004c30')}); }}
+''' for name in ('dashboard', 'location_on', 'agriculture', 'image', 'alt_route', 'search', 'auto_awesome'))}
 .note {{ background: #fbf4df; border: 1px solid #efe0ae; color: #5b4a12; border-radius: 12px; padding: .85rem 1.1rem; font-size: .95rem; }}
 .userbox {{ border-top: 1px solid {BORDER}; margin-top: 1.6rem; padding-top: 1rem; }}
 .userbox .n {{ font-weight: 600; font-size: 1.05rem; }}
