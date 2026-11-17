@@ -220,6 +220,7 @@ CREATE TABLE delivery_receipts (
   received_quantity  DECIMAL(12,3) NOT NULL,
   discrepancy        DECIMAL(12,3) NOT NULL COMMENT 'received - allocated (negative = shortfall)',
   discrepancy_reason VARCHAR(255) NULL,
+  shortfall_disposition VARCHAR(24) NOT NULL DEFAULT 'NONE',
   received_date      DATE NOT NULL,
   received_by        INT NOT NULL,
   created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -228,6 +229,9 @@ CREATE TABLE delivery_receipts (
   CONSTRAINT ck_rec_recv  CHECK (received_quantity >= 0),
   CONSTRAINT ck_rec_diff  CHECK (ABS(discrepancy - (received_quantity - allocated_quantity)) < 0.0005),
   CONSTRAINT ck_rec_reason CHECK (ABS(discrepancy) < 0.0005 OR CHAR_LENGTH(TRIM(COALESCE(discrepancy_reason,''))) > 0),
+  CONSTRAINT ck_rec_disposition CHECK (
+    (ABS(discrepancy) < 0.0005 AND shortfall_disposition = 'NONE') OR
+    (discrepancy < -0.0005 AND shortfall_disposition IN ('RETURNED_TO_FARM','LOST_IN_TRANSIT'))),
   CONSTRAINT fk_rec_alloc FOREIGN KEY (allocation_id) REFERENCES allocations(allocation_id),
   CONSTRAINT fk_rec_user  FOREIGN KEY (received_by) REFERENCES users(user_id)
 ) ENGINE=InnoDB;
@@ -362,7 +366,7 @@ JOIN farms f ON f.farm_id = cy.farm_id
 LEFT JOIN users u ON u.user_id = m.user_id;
 
 CREATE VIEW v_receipts AS
-SELECT d.receipt_id, d.allocation_id, d.allocated_quantity, d.received_quantity, d.discrepancy, d.discrepancy_reason,
+SELECT d.receipt_id, d.allocation_id, d.allocated_quantity, d.received_quantity, d.discrepancy, d.discrepancy_reason, d.shortfall_disposition,
   d.received_date, d.received_by, a.request_id, a.lot_id, a.unit, c.crop_name, f.farm_name, cy.farm_id,
   r.market_id, mk.market_name, mk.emirate AS market_emirate
 FROM delivery_receipts d
@@ -393,6 +397,7 @@ FROM users u LEFT JOIN markets m ON m.market_id = u.market_id;
 -- Demo accounts: admin1, farmer_ahmed, farmer_mariam, farmer_salem,
 --                buyer_dubai, buyer_adcm, buyer_sharjah, buyer_alain   (password: Demo@1234)
 -- =============================================================================
+USE farm_market;
 
 INSERT INTO units (unit_code, unit_name, category, to_base_factor) VALUES
 ('kg', 'Kilogram', 'mass', 1), ('g', 'Gram', 'mass', 0.001), ('tonne', 'Metric tonne', 'mass', 1000), ('crate', 'Crate', 'count', 1);
@@ -493,6 +498,7 @@ INSERT INTO stock_movements (lot_id, movement_type, quantity, unit, movement_dat
 (1, 'RESERVED', 100, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 9 DAY), '10:00:00'), 2, 'Allocated to request #1', 1),
 (1, 'DELIVERY', 95, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 7 DAY), '15:00:00'), 6, 'Delivered to request #1', 1),
 (1, 'RESERVATION_RELEASED', 5, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 7 DAY), '15:00:00'), 6, 'Delivery shortfall: 5 kg damaged in transit', 1),
+(1, 'LOSS', 5, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 7 DAY), '15:00:00'), 6, 'Delivery shortfall: 5 kg damaged in transit', 1),
 (2, 'RESERVED', 30, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 7 DAY), '10:00:00'), 2, 'Allocated to request #1', 2),
 (2, 'DELIVERY', 30, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 5 DAY), '15:00:00'), 6, 'Delivered to request #1', 2),
 (4, 'RESERVED', 60, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 6 DAY), '10:00:00'), 2, 'Allocated to request #2', 3),
@@ -501,6 +507,7 @@ INSERT INTO stock_movements (lot_id, movement_type, quantity, unit, movement_dat
 (7, 'RESERVED', 80, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 5 DAY), '10:00:00'), 3, 'Allocated to request #3', 5),
 (7, 'DELIVERY', 78, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 3 DAY), '15:00:00'), 7, 'Delivered to request #3', 5),
 (7, 'RESERVATION_RELEASED', 2, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 3 DAY), '15:00:00'), 7, 'Delivery shortfall: 2 kg under-weight on arrival', 5),
+(7, 'LOSS', 2, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 3 DAY), '15:00:00'), 7, 'Delivery shortfall: 2 kg under-weight on arrival', 5),
 (8, 'RESERVED', 40, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '10:00:00'), 3, 'Allocated to request #3', 6),
 (8, 'DELIVERY', 40, 'kg', TIMESTAMP(CURDATE(), '15:00:00'), 7, 'Delivered to request #3', 6),
 (6, 'RESERVED', 0.5, 'tonne', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 4 DAY), '10:00:00'), 2, 'Allocated to request #4', 7),
@@ -508,20 +515,21 @@ INSERT INTO stock_movements (lot_id, movement_type, quantity, unit, movement_dat
 (11, 'RESERVED', 50, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 3 DAY), '10:00:00'), 4, 'Allocated to request #5', 8),
 (11, 'DELIVERY', 48, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:00:00'), 6, 'Delivered to request #5', 8),
 (11, 'RESERVATION_RELEASED', 2, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:00:00'), 6, 'Delivery shortfall: 2 kg wilted on arrival', 8),
+(11, 'LOSS', 2, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:00:00'), 6, 'Delivery shortfall: 2 kg wilted on arrival', 8),
 (12, 'RESERVED', 30, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '10:00:00'), 4, 'Allocated to request #5', 9),
 (13, 'RESERVED', 100, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 2 DAY), '10:00:00'), 4, 'Allocated to request #6', 10),
 (14, 'RESERVED', 50, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '10:00:00'), 4, 'Allocated to request #6', 11),
 (10, 'RESERVED', 60, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 3 DAY), '10:00:00'), 3, 'Allocated to request #7', 12),
 (10, 'DELIVERY', 60, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:00:00'), 7, 'Delivered to request #7', 12);
-INSERT INTO delivery_receipts (allocation_id, allocated_quantity, received_quantity, discrepancy, discrepancy_reason, received_date, received_by, created_at) VALUES
-(1, 100, 95, -5, '5 kg damaged in transit', DATE_SUB(CURDATE(), INTERVAL 7 DAY), 6, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 7 DAY), '15:00:00')),
-(2, 30, 30, 0, NULL, DATE_SUB(CURDATE(), INTERVAL 5 DAY), 6, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 5 DAY), '15:00:00')),
-(3, 60, 60, 0, NULL, DATE_SUB(CURDATE(), INTERVAL 4 DAY), 5, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 4 DAY), '15:00:00')),
-(5, 80, 78, -2, '2 kg under-weight on arrival', DATE_SUB(CURDATE(), INTERVAL 3 DAY), 7, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 3 DAY), '15:00:00')),
-(6, 40, 40, 0, NULL, CURDATE(), 7, TIMESTAMP(CURDATE(), '15:00:00')),
-(7, 0.5, 0.5, 0.0, NULL, DATE_SUB(CURDATE(), INTERVAL 2 DAY), 8, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 2 DAY), '15:00:00')),
-(8, 50, 48, -2, '2 kg wilted on arrival', DATE_SUB(CURDATE(), INTERVAL 1 DAY), 6, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:00:00')),
-(12, 60, 60, 0, NULL, DATE_SUB(CURDATE(), INTERVAL 1 DAY), 7, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:00:00'));
+INSERT INTO delivery_receipts (allocation_id, allocated_quantity, received_quantity, discrepancy, discrepancy_reason, shortfall_disposition, received_date, received_by, created_at) VALUES
+(1, 100, 95, -5, '5 kg damaged in transit', 'LOST_IN_TRANSIT', DATE_SUB(CURDATE(), INTERVAL 7 DAY), 6, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 7 DAY), '15:00:00')),
+(2, 30, 30, 0, NULL, 'NONE', DATE_SUB(CURDATE(), INTERVAL 5 DAY), 6, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 5 DAY), '15:00:00')),
+(3, 60, 60, 0, NULL, 'NONE', DATE_SUB(CURDATE(), INTERVAL 4 DAY), 5, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 4 DAY), '15:00:00')),
+(5, 80, 78, -2, '2 kg under-weight on arrival', 'LOST_IN_TRANSIT', DATE_SUB(CURDATE(), INTERVAL 3 DAY), 7, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 3 DAY), '15:00:00')),
+(6, 40, 40, 0, NULL, 'NONE', CURDATE(), 7, TIMESTAMP(CURDATE(), '15:00:00')),
+(7, 0.5, 0.5, 0.0, NULL, 'NONE', DATE_SUB(CURDATE(), INTERVAL 2 DAY), 8, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 2 DAY), '15:00:00')),
+(8, 50, 48, -2, '2 kg wilted on arrival', 'LOST_IN_TRANSIT', DATE_SUB(CURDATE(), INTERVAL 1 DAY), 6, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:00:00')),
+(12, 60, 60, 0, NULL, 'NONE', DATE_SUB(CURDATE(), INTERVAL 1 DAY), 7, TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:00:00'));
 INSERT INTO stock_movements (lot_id, movement_type, quantity, unit, movement_date, user_id, reason) VALUES
 (9, 'LOSS', 95, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '08:00:00'), 3, 'Expired before sale - spoilage'),
 (11, 'LOSS', 5, 'kg', TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 2 DAY), '08:00:00'), 4, 'Wilting damage'),

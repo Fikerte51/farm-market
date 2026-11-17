@@ -1,0 +1,1220 @@
+{
+  "database": "farm_market_test",
+  "table_count": 15,
+  "foreign_key_count": 28,
+  "tables": {
+    "allocations": [
+      {
+        "t": "allocations",
+        "c": "allocation_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "allocations",
+        "c": "request_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "allocations",
+        "c": "lot_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "allocations",
+        "c": "quantity",
+        "ty": "decimal(12,3)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "allocations",
+        "c": "unit",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "allocations",
+        "c": "status",
+        "ty": "varchar(10)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "allocations",
+        "c": "allocated_by",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "allocations",
+        "c": "allocated_at",
+        "ty": "datetime",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "allocations",
+        "c": "closed_at",
+        "ty": "datetime",
+        "n": "YES",
+        "k": ""
+      }
+    ],
+    "audit_log": [
+      {
+        "t": "audit_log",
+        "c": "audit_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "audit_log",
+        "c": "user_id",
+        "ty": "int",
+        "n": "YES",
+        "k": "MUL"
+      },
+      {
+        "t": "audit_log",
+        "c": "username",
+        "ty": "varchar(60)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "audit_log",
+        "c": "action",
+        "ty": "varchar(40)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "audit_log",
+        "c": "table_name",
+        "ty": "varchar(40)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "audit_log",
+        "c": "record_id",
+        "ty": "varchar(60)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "audit_log",
+        "c": "details",
+        "ty": "varchar(500)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "audit_log",
+        "c": "success",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "audit_log",
+        "c": "created_at",
+        "ty": "datetime",
+        "n": "NO",
+        "k": "MUL"
+      }
+    ],
+    "crop_cycles": [
+      {
+        "t": "crop_cycles",
+        "c": "cycle_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "crop_cycles",
+        "c": "farm_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "crop_cycles",
+        "c": "crop_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "crop_cycles",
+        "c": "planting_date",
+        "ty": "date",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "crop_cycles",
+        "c": "expected_harvest_date",
+        "ty": "date",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "crop_cycles",
+        "c": "expected_quantity",
+        "ty": "decimal(12,3)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "crop_cycles",
+        "c": "expected_unit",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "crop_cycles",
+        "c": "status",
+        "ty": "varchar(12)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "crop_cycles",
+        "c": "notes",
+        "ty": "varchar(200)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "crop_cycles",
+        "c": "is_active",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "crops": [
+      {
+        "t": "crops",
+        "c": "crop_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "crops",
+        "c": "crop_name",
+        "ty": "varchar(60)",
+        "n": "NO",
+        "k": "UNI"
+      },
+      {
+        "t": "crops",
+        "c": "category",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "crops",
+        "c": "is_active",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "delivery_receipts": [
+      {
+        "t": "delivery_receipts",
+        "c": "receipt_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "allocation_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "UNI"
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "allocated_quantity",
+        "ty": "decimal(12,3)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "received_quantity",
+        "ty": "decimal(12,3)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "discrepancy",
+        "ty": "decimal(12,3)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "discrepancy_reason",
+        "ty": "varchar(255)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "shortfall_disposition",
+        "ty": "varchar(24)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "received_date",
+        "ty": "date",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "received_by",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "delivery_receipts",
+        "c": "created_at",
+        "ty": "datetime",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "farms": [
+      {
+        "t": "farms",
+        "c": "farm_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "farms",
+        "c": "farm_name",
+        "ty": "varchar(100)",
+        "n": "NO",
+        "k": "UNI"
+      },
+      {
+        "t": "farms",
+        "c": "emirate",
+        "ty": "varchar(30)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "farms",
+        "c": "location_desc",
+        "ty": "varchar(200)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "farms",
+        "c": "area_hectares",
+        "ty": "decimal(10,3)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "farms",
+        "c": "is_active",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "harvest_lot_images": [
+      {
+        "t": "harvest_lot_images",
+        "c": "image_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "harvest_lot_images",
+        "c": "lot_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "harvest_lot_images",
+        "c": "file_path",
+        "ty": "varchar(255)",
+        "n": "NO",
+        "k": "UNI"
+      },
+      {
+        "t": "harvest_lot_images",
+        "c": "mime_type",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "harvest_lot_images",
+        "c": "caption",
+        "ty": "varchar(200)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "harvest_lot_images",
+        "c": "uploaded_by",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "harvest_lot_images",
+        "c": "uploaded_at",
+        "ty": "datetime",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "harvest_lot_images",
+        "c": "is_active",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "harvest_lots": [
+      {
+        "t": "harvest_lots",
+        "c": "lot_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "harvest_lots",
+        "c": "cycle_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "harvest_lots",
+        "c": "crop_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "harvest_lots",
+        "c": "quantity",
+        "ty": "decimal(12,3)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "harvest_lots",
+        "c": "unit",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "harvest_lots",
+        "c": "harvest_date",
+        "ty": "date",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "harvest_lots",
+        "c": "sell_by_date",
+        "ty": "date",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "harvest_lots",
+        "c": "is_active",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "market_requests": [
+      {
+        "t": "market_requests",
+        "c": "request_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "market_requests",
+        "c": "market_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "market_requests",
+        "c": "crop_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "market_requests",
+        "c": "quantity",
+        "ty": "decimal(12,3)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "market_requests",
+        "c": "unit",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "market_requests",
+        "c": "needed_by_date",
+        "ty": "date",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "market_requests",
+        "c": "status",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "market_requests",
+        "c": "notes",
+        "ty": "varchar(200)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "market_requests",
+        "c": "created_by",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "market_requests",
+        "c": "created_at",
+        "ty": "datetime",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "market_requests",
+        "c": "updated_at",
+        "ty": "datetime",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "markets": [
+      {
+        "t": "markets",
+        "c": "market_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "markets",
+        "c": "market_name",
+        "ty": "varchar(100)",
+        "n": "NO",
+        "k": "UNI"
+      },
+      {
+        "t": "markets",
+        "c": "emirate",
+        "ty": "varchar(30)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "markets",
+        "c": "address",
+        "ty": "varchar(200)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "markets",
+        "c": "is_active",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "request_status_history": [
+      {
+        "t": "request_status_history",
+        "c": "history_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "request_status_history",
+        "c": "request_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "request_status_history",
+        "c": "old_status",
+        "ty": "varchar(20)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "request_status_history",
+        "c": "new_status",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "request_status_history",
+        "c": "changed_at",
+        "ty": "datetime",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "request_status_history",
+        "c": "changed_by",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "request_status_history",
+        "c": "reason",
+        "ty": "varchar(255)",
+        "n": "YES",
+        "k": ""
+      }
+    ],
+    "stock_movements": [
+      {
+        "t": "stock_movements",
+        "c": "movement_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "stock_movements",
+        "c": "lot_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "stock_movements",
+        "c": "movement_type",
+        "ty": "varchar(25)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "stock_movements",
+        "c": "quantity",
+        "ty": "decimal(12,3)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "stock_movements",
+        "c": "unit",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "stock_movements",
+        "c": "movement_date",
+        "ty": "datetime",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "stock_movements",
+        "c": "user_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "MUL"
+      },
+      {
+        "t": "stock_movements",
+        "c": "reason",
+        "ty": "varchar(255)",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "stock_movements",
+        "c": "allocation_id",
+        "ty": "int",
+        "n": "YES",
+        "k": "MUL"
+      }
+    ],
+    "units": [
+      {
+        "t": "units",
+        "c": "unit_code",
+        "ty": "varchar(20)",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "units",
+        "c": "unit_name",
+        "ty": "varchar(60)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "units",
+        "c": "category",
+        "ty": "varchar(10)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "units",
+        "c": "to_base_factor",
+        "ty": "decimal(18,6)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "units",
+        "c": "is_active",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      }
+    ],
+    "user_farms": [
+      {
+        "t": "user_farms",
+        "c": "user_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "user_farms",
+        "c": "farm_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      }
+    ],
+    "users": [
+      {
+        "t": "users",
+        "c": "user_id",
+        "ty": "int",
+        "n": "NO",
+        "k": "PRI"
+      },
+      {
+        "t": "users",
+        "c": "username",
+        "ty": "varchar(50)",
+        "n": "NO",
+        "k": "UNI"
+      },
+      {
+        "t": "users",
+        "c": "full_name",
+        "ty": "varchar(100)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "users",
+        "c": "password_hash",
+        "ty": "varchar(100)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "users",
+        "c": "role",
+        "ty": "varchar(10)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "users",
+        "c": "market_id",
+        "ty": "int",
+        "n": "YES",
+        "k": "MUL"
+      },
+      {
+        "t": "users",
+        "c": "is_active",
+        "ty": "tinyint(1)",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "users",
+        "c": "failed_attempts",
+        "ty": "int",
+        "n": "NO",
+        "k": ""
+      },
+      {
+        "t": "users",
+        "c": "locked_until",
+        "ty": "datetime",
+        "n": "YES",
+        "k": ""
+      },
+      {
+        "t": "users",
+        "c": "created_at",
+        "ty": "datetime",
+        "n": "NO",
+        "k": ""
+      }
+    ]
+  },
+  "foreign_keys": [
+    {
+      "t": "allocations",
+      "c": "allocated_by",
+      "rt": "users",
+      "rc": "user_id"
+    },
+    {
+      "t": "allocations",
+      "c": "lot_id",
+      "rt": "harvest_lots",
+      "rc": "lot_id"
+    },
+    {
+      "t": "allocations",
+      "c": "request_id",
+      "rt": "market_requests",
+      "rc": "request_id"
+    },
+    {
+      "t": "allocations",
+      "c": "unit",
+      "rt": "units",
+      "rc": "unit_code"
+    },
+    {
+      "t": "audit_log",
+      "c": "user_id",
+      "rt": "users",
+      "rc": "user_id"
+    },
+    {
+      "t": "crop_cycles",
+      "c": "crop_id",
+      "rt": "crops",
+      "rc": "crop_id"
+    },
+    {
+      "t": "crop_cycles",
+      "c": "expected_unit",
+      "rt": "units",
+      "rc": "unit_code"
+    },
+    {
+      "t": "crop_cycles",
+      "c": "farm_id",
+      "rt": "farms",
+      "rc": "farm_id"
+    },
+    {
+      "t": "delivery_receipts",
+      "c": "allocation_id",
+      "rt": "allocations",
+      "rc": "allocation_id"
+    },
+    {
+      "t": "delivery_receipts",
+      "c": "received_by",
+      "rt": "users",
+      "rc": "user_id"
+    },
+    {
+      "t": "harvest_lot_images",
+      "c": "lot_id",
+      "rt": "harvest_lots",
+      "rc": "lot_id"
+    },
+    {
+      "t": "harvest_lot_images",
+      "c": "uploaded_by",
+      "rt": "users",
+      "rc": "user_id"
+    },
+    {
+      "t": "harvest_lots",
+      "c": "crop_id",
+      "rt": "crops",
+      "rc": "crop_id"
+    },
+    {
+      "t": "harvest_lots",
+      "c": "cycle_id",
+      "rt": "crop_cycles",
+      "rc": "cycle_id"
+    },
+    {
+      "t": "harvest_lots",
+      "c": "unit",
+      "rt": "units",
+      "rc": "unit_code"
+    },
+    {
+      "t": "market_requests",
+      "c": "created_by",
+      "rt": "users",
+      "rc": "user_id"
+    },
+    {
+      "t": "market_requests",
+      "c": "crop_id",
+      "rt": "crops",
+      "rc": "crop_id"
+    },
+    {
+      "t": "market_requests",
+      "c": "market_id",
+      "rt": "markets",
+      "rc": "market_id"
+    },
+    {
+      "t": "market_requests",
+      "c": "unit",
+      "rt": "units",
+      "rc": "unit_code"
+    },
+    {
+      "t": "request_status_history",
+      "c": "changed_by",
+      "rt": "users",
+      "rc": "user_id"
+    },
+    {
+      "t": "request_status_history",
+      "c": "request_id",
+      "rt": "market_requests",
+      "rc": "request_id"
+    },
+    {
+      "t": "stock_movements",
+      "c": "allocation_id",
+      "rt": "allocations",
+      "rc": "allocation_id"
+    },
+    {
+      "t": "stock_movements",
+      "c": "lot_id",
+      "rt": "harvest_lots",
+      "rc": "lot_id"
+    },
+    {
+      "t": "stock_movements",
+      "c": "unit",
+      "rt": "units",
+      "rc": "unit_code"
+    },
+    {
+      "t": "stock_movements",
+      "c": "user_id",
+      "rt": "users",
+      "rc": "user_id"
+    },
+    {
+      "t": "user_farms",
+      "c": "farm_id",
+      "rt": "farms",
+      "rc": "farm_id"
+    },
+    {
+      "t": "user_farms",
+      "c": "user_id",
+      "rt": "users",
+      "rc": "user_id"
+    },
+    {
+      "t": "users",
+      "c": "market_id",
+      "rt": "markets",
+      "rc": "market_id"
+    }
+  ],
+  "domain_pages": {
+    "cultivation": [
+      "farms",
+      "crops",
+      "crop_cycles",
+      "harvest_lots",
+      "harvest_lot_images"
+    ],
+    "fulfilment": [
+      "markets",
+      "market_requests",
+      "allocations",
+      "delivery_receipts",
+      "request_status_history"
+    ],
+    "accountability": [
+      "units",
+      "users",
+      "user_farms",
+      "stock_movements",
+      "audit_log"
+    ]
+  },
+  "notation": "Each child FK points to a named parent reference. Labels are parent : child cardinality. [ref] repeats the same logical entity, not another table.",
+  "relationships": [
+    {
+      "t": "allocations",
+      "c": "allocated_by",
+      "rt": "users",
+      "rc": "user_id",
+      "verb": "allocates"
+    },
+    {
+      "t": "allocations",
+      "c": "lot_id",
+      "rt": "harvest_lots",
+      "rc": "lot_id",
+      "verb": "reserves"
+    },
+    {
+      "t": "allocations",
+      "c": "request_id",
+      "rt": "market_requests",
+      "rc": "request_id",
+      "verb": "filled by"
+    },
+    {
+      "t": "allocations",
+      "c": "unit",
+      "rt": "units",
+      "rc": "unit_code",
+      "verb": "measures allocation"
+    },
+    {
+      "t": "audit_log",
+      "c": "user_id",
+      "rt": "users",
+      "rc": "user_id",
+      "verb": "performs action"
+    },
+    {
+      "t": "crop_cycles",
+      "c": "crop_id",
+      "rt": "crops",
+      "rc": "crop_id",
+      "verb": "grows"
+    },
+    {
+      "t": "crop_cycles",
+      "c": "expected_unit",
+      "rt": "units",
+      "rc": "unit_code",
+      "verb": "measures forecast"
+    },
+    {
+      "t": "crop_cycles",
+      "c": "farm_id",
+      "rt": "farms",
+      "rc": "farm_id",
+      "verb": "hosts"
+    },
+    {
+      "t": "delivery_receipts",
+      "c": "allocation_id",
+      "rt": "allocations",
+      "rc": "allocation_id",
+      "verb": "confirmed by"
+    },
+    {
+      "t": "delivery_receipts",
+      "c": "received_by",
+      "rt": "users",
+      "rc": "user_id",
+      "verb": "confirms receipt"
+    },
+    {
+      "t": "harvest_lot_images",
+      "c": "lot_id",
+      "rt": "harvest_lots",
+      "rc": "lot_id",
+      "verb": "has image"
+    },
+    {
+      "t": "harvest_lot_images",
+      "c": "uploaded_by",
+      "rt": "users",
+      "rc": "user_id",
+      "verb": "uploads"
+    },
+    {
+      "t": "harvest_lots",
+      "c": "crop_id",
+      "rt": "crops",
+      "rc": "crop_id",
+      "verb": "classifies lot"
+    },
+    {
+      "t": "harvest_lots",
+      "c": "cycle_id",
+      "rt": "crop_cycles",
+      "rc": "cycle_id",
+      "verb": "yields"
+    },
+    {
+      "t": "harvest_lots",
+      "c": "unit",
+      "rt": "units",
+      "rc": "unit_code",
+      "verb": "measures harvest"
+    },
+    {
+      "t": "market_requests",
+      "c": "created_by",
+      "rt": "users",
+      "rc": "user_id",
+      "verb": "creates request"
+    },
+    {
+      "t": "market_requests",
+      "c": "crop_id",
+      "rt": "crops",
+      "rc": "crop_id",
+      "verb": "requests crop"
+    },
+    {
+      "t": "market_requests",
+      "c": "market_id",
+      "rt": "markets",
+      "rc": "market_id",
+      "verb": "places"
+    },
+    {
+      "t": "market_requests",
+      "c": "unit",
+      "rt": "units",
+      "rc": "unit_code",
+      "verb": "measures request"
+    },
+    {
+      "t": "request_status_history",
+      "c": "changed_by",
+      "rt": "users",
+      "rc": "user_id",
+      "verb": "changes status"
+    },
+    {
+      "t": "request_status_history",
+      "c": "request_id",
+      "rt": "market_requests",
+      "rc": "request_id",
+      "verb": "has transition"
+    },
+    {
+      "t": "stock_movements",
+      "c": "allocation_id",
+      "rt": "allocations",
+      "rc": "allocation_id",
+      "verb": "explains settlement"
+    },
+    {
+      "t": "stock_movements",
+      "c": "lot_id",
+      "rt": "harvest_lots",
+      "rc": "lot_id",
+      "verb": "has movement"
+    },
+    {
+      "t": "stock_movements",
+      "c": "unit",
+      "rt": "units",
+      "rc": "unit_code",
+      "verb": "measures movement"
+    },
+    {
+      "t": "stock_movements",
+      "c": "user_id",
+      "rt": "users",
+      "rc": "user_id",
+      "verb": "records movement"
+    },
+    {
+      "t": "user_farms",
+      "c": "farm_id",
+      "rt": "farms",
+      "rc": "farm_id",
+      "verb": "has assigned farmer"
+    },
+    {
+      "t": "user_farms",
+      "c": "user_id",
+      "rt": "users",
+      "rc": "user_id",
+      "verb": "has assignment"
+    },
+    {
+      "t": "users",
+      "c": "market_id",
+      "rt": "markets",
+      "rc": "market_id",
+      "verb": "employs buyer"
+    }
+  ]
+}

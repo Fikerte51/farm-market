@@ -50,7 +50,7 @@ Open http://localhost:8501. All demo accounts use the password **`Demo@1234`**:
 
 ## 4. Suggested live demo (12 minutes)
 1. **Harvest + image + restart** - `farmer_ahmed` > *Harvest & stock* > record a lot > *Lot images* > upload a JPG/PNG. Stop the server (Ctrl+C), start it again, sign in, open the lot's photos: the picture is still there. (Lot 12 also has a deliberately missing file to show graceful handling.)
-2. **Market search, request, partial delivery** - `buyer_dubai` > *Search local produce* > *My requests* > create a request. As `farmer_ahmed` > *Requests & allocation* > allocate. Back as the buyer > *Confirm deliveries* > receive less than allocated with a reason; see the discrepancy on the receipt.
+2. **Market search, request, partial delivery** - `buyer_dubai` > *Search local produce* > *My requests* > create a request. As `farmer_ahmed` > *Requests & allocation* > allocate. Back as the buyer > *Confirm deliveries* > receive less than allocated with a reason and select lost/damaged or returned to farm and fit for sale; see the discrepancy and disposition on the receipt.
 3. **Business rule** - as the farmer try to allocate more than the lot's available quantity (clear message, nothing saved). Or *Harvest & stock > Open lot by number* with another farm's lot (denied + audited).
 4. **LangChain assistant** - ask *"Which tomato lots are available?"* (supported), *"tomatoes"* (ambiguous -> clarification), *"What will tomato prices be?"* (unanswerable), *"delete all requests"* (refused).
 5. **Advanced feature** - wrong password 5 times (lock-out), then `admin1` > *Audit log* (logins, denials, allocations). Optional: *Analytics dashboard* with filters and CSV/PDF export. Show an invalid input (negative quantity) -> friendly message.
@@ -60,7 +60,7 @@ Open http://localhost:8501. All demo accounts use the password **`Demo@1234`**:
 pip install -r requirements-dev.txt
 pytest tests
 ```
-Uses a separate throw-away database `farm_market_test` (rebuilt from the SQL script; the DB user needs permission to create databases). 91 tests: stock calculations, allocation/oversell rules, partial deliveries, units, ownership, login lock-out, images, analytics, friendly errors, 10 simultaneous allocations, assistant (12 question groups incl. ambiguous / unanswerable / unsafe) and GUI flows. The assistant tests use a scripted stand-in for Gemini so they run offline; set `GOOGLE_API_KEY` to also run one live Gemini test.
+Uses a separate throw-away database `farm_market_test` (rebuilt from the SQL script; the DB user needs permission to create databases). 103 offline tests: stock calculations, allocation/oversell rules, partial deliveries, units, ownership, login lock-out, images, analytics, friendly errors, 10 simultaneous allocations, assistant (12 question groups incl. ambiguous / unanswerable / unsafe) and GUI flows. The assistant tests use a scripted stand-in for Gemini so they run offline; The separate live validation runner records 12 real Gemini answers beside independent SQL results in `docs/live_assistant_validation.json`. It uses a dedicated synthetic database and labels the model used for every answer.
 
 ## 6. How the important rules are enforced
 * **Stock is never stored** - `v_lot_stock` sums the dated `stock_movements`. The ledger and the audit log are append-only (triggers). Expected harvest lives in `crop_cycles` and never counts as stock.
@@ -79,7 +79,7 @@ Uses a separate throw-away database `farm_market_test` (rebuilt from the SQL scr
 
 ## 8. Regenerating the documents (optional)
 `python docs/tools/gen_diagrams.py` (diagrams from the live schema) -> `pytest tests --junitxml=docs/test_results.xml` -> `python docs/tools/build_pdfs.py`.
-Add your team names to `docs/Technical_Document.pdf` / `docs/Poster.pdf` (placeholders at the top) by editing `docs/tools/build_pdfs.py` and re-running it.
+Team details and lab B1 are maintained in `docs/tools/submission_content.py`. The technical document includes the test plan, all entity justifications, the complete relationship register, and actual live assistant answers. The poster is A1 landscape; diagram sources have an overview plus three readable domain pages.
 
 ## Project structure
 ```
@@ -91,3 +91,21 @@ database/              farm_market_full.sql (schema + data), 01_schema.sql, 02_s
 images/lots/           sample photos           uploads/   farmer uploads
 tests/                 pytest suite            docs/      diagrams, technical document, poster
 ```
+
+## Existing database upgrade: delivery shortfalls
+Before running this version against an existing database, run:
+```
+python upgrade_delivery_shortfalls.py
+```
+This preserves existing rows, adds `shortfall_disposition`, appends missing historical losses, and refreshes the receipt view. Historical shortfalls without a confirmed saleable-return record are conservatively treated as lost; the upgrade is safe to rerun. It refuses an overdraw rather than silently rewriting the ledger if that quantity has already been reallocated. The corrected seed records 5 kg damaged (lot 1), 2 kg under-weight (lot 7), and 2 kg wilted (lot 11) as losses.
+
+New receipts require a reason and an explicit shortfall choice: `LOST_IN_TRANSIT` removes the missing quantity through a LOSS movement, while `RETURNED_TO_FARM` releases only a physically returned, fit-for-sale quantity. The default in the form is lost/damaged. Receipt, delivery, release, loss and audit are atomic under a lot lock.
+
+## Reproduce the submission evidence
+```
+pytest tests -k "not test_live_gemini_roundtrip" -q --junitxml=docs/test_results.xml
+python docs/tools/validate_live_assistant.py
+DB_NAME=farm_market_test python docs/tools/gen_diagrams.py
+python docs/tools/build_pdfs.py
+```
+The live validator creates/rebuilds only `farm_market_live_validation`, never the working database. It resumes successful evidence, paces calls and saves errors honestly. If a model quota is exhausted, an explicitly selected supported model can finish remaining cases, e.g. `GEMINI_MODEL=gemini-3.5-flash-lite python docs/tools/validate_live_assistant.py`; model names are recorded per answer. Delete the evidence JSON only when a completely fresh live run is intended.

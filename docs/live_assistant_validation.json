@@ -1,0 +1,694 @@
+{
+  "run_at": "2026-11-17T16:40:30.888433+04:00",
+  "model": "gemini-2.5-flash, gemini-3.5-flash-lite",
+  "api_version": "v1beta",
+  "database": "farm_market_live_validation",
+  "dataset": "Fresh synthetic seed; no working database records",
+  "results": [
+    {
+      "number": 1,
+      "username": "buyer_dubai",
+      "role": "buyer",
+      "question": "Which tomato lots are available right now?",
+      "answer": "The following tomato lots are available:\n*   Lot 13: 20 kg from Al Dhaid Sun Farm, Sharjah (harvested 2026-11-08, sell-by 2026-11-22)\n*   Lot 2: 50 kg from Al Ain Green Valley Farm, Abu Dhabi (harvested 2026-11-08, sell-by 2026-11-23)\n*   Lot 3: 56 kg from Al Ain Green Valley Farm, Abu Dhabi (harvested 2026-11-14, sell-by 2026-11-27)\n*   Lot 14: 42 kg from Al Dhaid Sun Farm, Sharjah (harvested 2026-11-15, sell-by 2026-11-28)",
+      "mode": "ai",
+      "tools_called": [
+        "available_produce"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT lot_id,available,unit FROM v_lot_details WHERE crop_name='Tomato' AND is_active=1 AND available>0.0005 AND (sell_by_date IS NULL OR sell_by_date>=CURDATE())",
+      "sql_result": [
+        {
+          "lot_id": 2,
+          "available": 50.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 3,
+          "available": 56.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 13,
+          "available": 20.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 14,
+          "available": 42.0,
+          "unit": "kg"
+        }
+      ],
+      "supporting_records": [
+        {
+          "tool": "available_produce",
+          "rows": [
+            {
+              "lot_id": 13,
+              "crop_name": "Tomato",
+              "farm_name": "Al Dhaid Sun Farm",
+              "emirate": "Sharjah",
+              "harvest_date": "2026-11-08",
+              "sell_by_date": "2026-11-22",
+              "available": 20.0,
+              "unit": "kg"
+            },
+            {
+              "lot_id": 2,
+              "crop_name": "Tomato",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-08",
+              "sell_by_date": "2026-11-23",
+              "available": 50.0,
+              "unit": "kg"
+            },
+            {
+              "lot_id": 3,
+              "crop_name": "Tomato",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-14",
+              "sell_by_date": "2026-11-27",
+              "available": 56.0,
+              "unit": "kg"
+            },
+            {
+              "lot_id": 14,
+              "crop_name": "Tomato",
+              "farm_name": "Al Dhaid Sun Farm",
+              "emirate": "Sharjah",
+              "harvest_date": "2026-11-15",
+              "sell_by_date": "2026-11-28",
+              "available": 42.0,
+              "unit": "kg"
+            }
+          ]
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 3.44,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 2,
+      "username": "buyer_adcm",
+      "role": "buyer",
+      "question": "What is the status and remaining need of request 6?",
+      "answer": "- Request 6 for Tomato at Abu Dhabi Central Market:\n  - Status: PARTIALLY_ALLOCATED\n  - Remaining need: 50 kg",
+      "mode": "ai",
+      "tools_called": [
+        "request_status"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT request_id,status,remaining_need,unit FROM v_request_summary WHERE request_id=6 AND market_id=1",
+      "sql_result": [
+        {
+          "request_id": 6,
+          "status": "PARTIALLY_ALLOCATED",
+          "remaining_need": 50.0,
+          "unit": "kg"
+        }
+      ],
+      "supporting_records": [
+        {
+          "tool": "request_status",
+          "rows": [
+            {
+              "request_id": 6,
+              "market_name": "Abu Dhabi Central Market",
+              "crop_name": "Tomato",
+              "requested": 200.0,
+              "unit": "kg",
+              "needed_by_date": "2026-11-23",
+              "status": "PARTIALLY_ALLOCATED",
+              "allocated_open": 150.0,
+              "received": 0.0,
+              "remaining_need": 50.0
+            }
+          ]
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 2.54,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 3,
+      "username": "buyer_dubai",
+      "role": "buyer",
+      "question": "Show me the status of request 6.",
+      "answer": "There is no information for request 6.",
+      "mode": "ai",
+      "tools_called": [
+        "request_status"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT request_id,status,remaining_need,unit FROM v_request_summary WHERE request_id=6 AND market_id=2",
+      "sql_result": [],
+      "supporting_records": [
+        {
+          "tool": "request_status",
+          "rows": []
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 2.23,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 4,
+      "username": "buyer_adcm",
+      "role": "buyer",
+      "question": "Which of our requests are still open?",
+      "answer": "The following requests are still open for Abu Dhabi Central Market:\n\n*   **Cucumber (Request ID: 2)**\n    *   Requested: 100 kg\n    *   Allocated (open): 40 kg\n    *   Received: 60 kg\n    *   Remaining need: 0 kg\n    *   Status: PARTIALLY_FULFILLED\n    *   Needed by: 2026-11-20\n*   **Tomato (Request ID: 6)**\n    *   Requested: 200 kg\n    *   Allocated (open): 150 kg\n    *   Received: 0 kg\n    *   Remaining need: 50 kg\n    *   Status: PARTIALLY_ALLOCATED\n    *   Needed by: 2026-11-23",
+      "mode": "ai",
+      "tools_called": [
+        "request_status"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT request_id,status,remaining_need,unit FROM v_request_summary WHERE market_id=1 AND status NOT IN ('FULFILLED','CLOSED','CANCELLED')",
+      "sql_result": [
+        {
+          "request_id": 2,
+          "status": "PARTIALLY_FULFILLED",
+          "remaining_need": 0.0,
+          "unit": "kg"
+        },
+        {
+          "request_id": 6,
+          "status": "PARTIALLY_ALLOCATED",
+          "remaining_need": 50.0,
+          "unit": "kg"
+        }
+      ],
+      "supporting_records": [
+        {
+          "tool": "request_status",
+          "rows": [
+            {
+              "request_id": 2,
+              "market_name": "Abu Dhabi Central Market",
+              "crop_name": "Cucumber",
+              "requested": 100.0,
+              "unit": "kg",
+              "needed_by_date": "2026-11-20",
+              "status": "PARTIALLY_FULFILLED",
+              "allocated_open": 40.0,
+              "received": 60.0,
+              "remaining_need": 0.0
+            },
+            {
+              "request_id": 6,
+              "market_name": "Abu Dhabi Central Market",
+              "crop_name": "Tomato",
+              "requested": 200.0,
+              "unit": "kg",
+              "needed_by_date": "2026-11-23",
+              "status": "PARTIALLY_ALLOCATED",
+              "allocated_open": 150.0,
+              "received": 0.0,
+              "remaining_need": 50.0
+            }
+          ]
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 17.37,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 5,
+      "username": "admin1",
+      "role": "admin",
+      "question": "Which deliveries had a discrepancy? List their receipt IDs and differences.",
+      "answer": "The following deliveries had discrepancies:\n\n*   **Receipt ID 7**: -2 kg of Lettuce (2 kg wilted on arrival)\n*   **Receipt ID 4**: -2 kg of Bell Pepper (2 kg under-weight on arrival)\n*   **Receipt ID 1**: -5 kg of Tomato (5 kg damaged in transit)",
+      "mode": "ai",
+      "tools_called": [
+        "delivery_receipts"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT receipt_id,discrepancy,unit,shortfall_disposition FROM v_receipts WHERE ABS(discrepancy)>=0.0005",
+      "sql_result": [
+        {
+          "receipt_id": 1,
+          "discrepancy": -5.0,
+          "unit": "kg",
+          "shortfall_disposition": "LOST_IN_TRANSIT"
+        },
+        {
+          "receipt_id": 4,
+          "discrepancy": -2.0,
+          "unit": "kg",
+          "shortfall_disposition": "LOST_IN_TRANSIT"
+        },
+        {
+          "receipt_id": 7,
+          "discrepancy": -2.0,
+          "unit": "kg",
+          "shortfall_disposition": "LOST_IN_TRANSIT"
+        }
+      ],
+      "supporting_records": [
+        {
+          "tool": "delivery_receipts",
+          "rows": [
+            {
+              "receipt_id": 7,
+              "request_id": 5,
+              "market_name": "Dubai Fresh Hub",
+              "crop_name": "Lettuce",
+              "farm_name": "Al Dhaid Sun Farm",
+              "allocated_quantity": 50.0,
+              "received_quantity": 48.0,
+              "discrepancy": -2.0,
+              "unit": "kg",
+              "discrepancy_reason": "2 kg wilted on arrival",
+              "shortfall_disposition": "LOST_IN_TRANSIT",
+              "received_date": "2026-11-16"
+            },
+            {
+              "receipt_id": 4,
+              "request_id": 3,
+              "market_name": "Sharjah Souk Al Jubail",
+              "crop_name": "Bell Pepper",
+              "farm_name": "RAK Highland Farm",
+              "allocated_quantity": 80.0,
+              "received_quantity": 78.0,
+              "discrepancy": -2.0,
+              "unit": "kg",
+              "discrepancy_reason": "2 kg under-weight on arrival",
+              "shortfall_disposition": "LOST_IN_TRANSIT",
+              "received_date": "2026-11-14"
+            },
+            {
+              "receipt_id": 1,
+              "request_id": 1,
+              "market_name": "Dubai Fresh Hub",
+              "crop_name": "Tomato",
+              "farm_name": "Al Ain Green Valley Farm",
+              "allocated_quantity": 100.0,
+              "received_quantity": 95.0,
+              "discrepancy": -5.0,
+              "unit": "kg",
+              "discrepancy_reason": "5 kg damaged in transit",
+              "shortfall_disposition": "LOST_IN_TRANSIT",
+              "received_date": "2026-11-10"
+            }
+          ]
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 29.26,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 6,
+      "username": "buyer_dubai",
+      "role": "buyer",
+      "question": "What tomato harvests are expected? Label them as forecasts.",
+      "answer": "Expected tomato harvests (forecasts):\n*   300 kg from Abu Dhabi, expected by 2026-11-05 (Harvesting)\n*   260 kg from Sharjah, expected by 2026-11-08 (Harvesting)\n*   320 kg from Abu Dhabi, expected by 2026-11-29 (Growing)",
+      "mode": "ai",
+      "tools_called": [
+        "expected_harvest"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT cycle_id,expected_quantity,expected_unit FROM v_cycles WHERE crop_name='Tomato' AND is_active=1 AND status IN ('PLANNED','GROWING','HARVESTING')",
+      "sql_result": [
+        {
+          "cycle_id": 1,
+          "expected_quantity": 300.0,
+          "expected_unit": "kg"
+        },
+        {
+          "cycle_id": 7,
+          "expected_quantity": 260.0,
+          "expected_unit": "kg"
+        },
+        {
+          "cycle_id": 8,
+          "expected_quantity": 320.0,
+          "expected_unit": "kg"
+        }
+      ],
+      "supporting_records": [
+        {
+          "tool": "expected_harvest",
+          "rows": [
+            {
+              "cycle_id": 1,
+              "emirate": "Abu Dhabi",
+              "crop_name": "Tomato",
+              "expected_harvest_date": "2026-11-05",
+              "expected_quantity": 300.0,
+              "expected_unit": "kg",
+              "status": "HARVESTING",
+              "note": "FORECAST - not saleable stock"
+            },
+            {
+              "cycle_id": 7,
+              "emirate": "Sharjah",
+              "crop_name": "Tomato",
+              "expected_harvest_date": "2026-11-08",
+              "expected_quantity": 260.0,
+              "expected_unit": "kg",
+              "status": "HARVESTING",
+              "note": "FORECAST - not saleable stock"
+            },
+            {
+              "cycle_id": 8,
+              "emirate": "Abu Dhabi",
+              "crop_name": "Tomato",
+              "expected_harvest_date": "2026-11-29",
+              "expected_quantity": 320.0,
+              "expected_unit": "kg",
+              "status": "GROWING",
+              "note": "FORECAST - not saleable stock"
+            }
+          ]
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 27.18,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 7,
+      "username": "farmer_ahmed",
+      "role": "farmer",
+      "question": "Across all farms assigned to me, show each harvest lot with on-hand, reserved and available stock.",
+      "answer": "Here is the stock summary for your farms:\n\n*   **Al Ain Green Valley Farm** (Abu Dhabi)\n    *   **Cucumber** (Lot 5, Harvest: 2026-11-15, Sell-by: 2026-11-26):\n        *   On-hand: 70 kg\n        *   Reserved: 40 kg\n        *   Available: 30 kg\n    *   **Tomato** (Lot 3, Harvest: 2026-11-14, Sell-by: 2026-11-27):\n        *   On-hand: 56 kg\n        *   Reserved: 0 kg\n        *   Available: 56 kg\n    *   **Cucumber** (Lot 4, Harvest: 2026-11-09, Sell-by: 2026-11-21):\n        *   On-hand: 30 kg\n        *   Reserved: 0 kg\n        *   Available: 30 kg\n    *   **Tomato** (Lot 2, Harvest: 2026-11-08, Sell-by: 2026-11-23):\n        *   On-hand: 50 kg\n        *   Reserved: 0 kg\n        *   Available: 50 kg\n    *   **Tomato** (Lot 1, Harvest: 2026-11-05, Sell-by: 2026-11-20):\n        *   On-hand: 0 kg\n        *   Reserved: 0 kg\n        *   Available: 0 kg\n*   **Liwa Oasis Date Farm** (Abu Dhabi)\n    *   **Dates (Khalas)** (Lot 6, Harvest: 2026-11-12, Sell-by: 2027-03-17):\n        *   On-hand: 0.7 tonne\n        *   Reserved: 0 tonne\n        *   Available: 0.7 tonne",
+      "mode": "ai",
+      "tools_called": [
+        "stock_summary"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT lot_id,on_hand,reserved,available,unit FROM v_lot_details WHERE is_active=1 AND farm_id IN (SELECT farm_id FROM user_farms WHERE user_id=2)",
+      "sql_result": [
+        {
+          "lot_id": 1,
+          "on_hand": 0.0,
+          "reserved": 0.0,
+          "available": 0.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 2,
+          "on_hand": 50.0,
+          "reserved": 0.0,
+          "available": 50.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 3,
+          "on_hand": 56.0,
+          "reserved": 0.0,
+          "available": 56.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 4,
+          "on_hand": 30.0,
+          "reserved": 0.0,
+          "available": 30.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 5,
+          "on_hand": 70.0,
+          "reserved": 40.0,
+          "available": 30.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 6,
+          "on_hand": 0.7,
+          "reserved": 0.0,
+          "available": 0.7,
+          "unit": "tonne"
+        }
+      ],
+      "supporting_records": [
+        {
+          "tool": "stock_summary",
+          "rows": [
+            {
+              "lot_id": 5,
+              "crop_name": "Cucumber",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-15",
+              "sell_by_date": "2026-11-26",
+              "unit": "kg",
+              "on_hand": 70.0,
+              "reserved": 40.0,
+              "available": 30.0
+            },
+            {
+              "lot_id": 3,
+              "crop_name": "Tomato",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-14",
+              "sell_by_date": "2026-11-27",
+              "unit": "kg",
+              "on_hand": 56.0,
+              "reserved": 0.0,
+              "available": 56.0
+            },
+            {
+              "lot_id": 6,
+              "crop_name": "Dates (Khalas)",
+              "farm_name": "Liwa Oasis Date Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-12",
+              "sell_by_date": "2027-03-17",
+              "unit": "tonne",
+              "on_hand": 0.7,
+              "reserved": 0.0,
+              "available": 0.7
+            },
+            {
+              "lot_id": 4,
+              "crop_name": "Cucumber",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-09",
+              "sell_by_date": "2026-11-21",
+              "unit": "kg",
+              "on_hand": 30.0,
+              "reserved": 0.0,
+              "available": 30.0
+            },
+            {
+              "lot_id": 2,
+              "crop_name": "Tomato",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-08",
+              "sell_by_date": "2026-11-23",
+              "unit": "kg",
+              "on_hand": 50.0,
+              "reserved": 0.0,
+              "available": 50.0
+            },
+            {
+              "lot_id": 1,
+              "crop_name": "Tomato",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-05",
+              "sell_by_date": "2026-11-20",
+              "unit": "kg",
+              "on_hand": 0.0,
+              "reserved": 0.0,
+              "available": 0.0
+            }
+          ]
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 30.09,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 8,
+      "username": "buyer_dubai",
+      "role": "buyer",
+      "model": "gemini-3.5-flash-lite",
+      "question": "Show farm stock details including on-hand and reserved quantities.",
+      "answer": "I can't answer that from the available data: Buyers cannot view private on-hand or reserved farm stock due to role restrictions. You may ask about available produce instead.",
+      "mode": "ai",
+      "tools_called": [
+        "cannot_answer"
+      ],
+      "gemini_invocations": 1,
+      "sql": null,
+      "sql_result": [],
+      "supporting_records": [],
+      "verification": "Buyer cannot see private farm stock; no stock rows disclosed",
+      "passed": true,
+      "seconds": 21.24
+    },
+    {
+      "number": 9,
+      "username": "farmer_ahmed",
+      "role": "farmer",
+      "question": "Which of my allocations are active?",
+      "answer": "- Allocation ID 4: 40 kg of Cucumber from Al Ain Green Valley Farm to Abu Dhabi Central Market, allocated on 2026-11-16. This is for request ID 2.",
+      "mode": "ai",
+      "tools_called": [
+        "allocations"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT allocation_id,quantity,unit FROM v_allocations WHERE status='ACTIVE' AND farm_id IN (SELECT farm_id FROM user_farms WHERE user_id=2)",
+      "sql_result": [
+        {
+          "allocation_id": 4,
+          "quantity": 40.0,
+          "unit": "kg"
+        }
+      ],
+      "supporting_records": [
+        {
+          "tool": "allocations",
+          "rows": [
+            {
+              "allocation_id": 4,
+              "request_id": 2,
+              "market_name": "Abu Dhabi Central Market",
+              "lot_id": 5,
+              "crop_name": "Cucumber",
+              "farm_name": "Al Ain Green Valley Farm",
+              "quantity": 40.0,
+              "unit": "kg",
+              "status": "ACTIVE",
+              "allocated_at": "2026-11-16 10:00:00",
+              "closed_at": null
+            }
+          ]
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 20.65,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 10,
+      "username": "buyer_dubai",
+      "role": "buyer",
+      "question": "tomatoes",
+      "answer": "Are you looking for available produce, expected harvests, or something else regarding tomatoes?",
+      "mode": "ai",
+      "tools_called": [
+        "ask_clarification"
+      ],
+      "gemini_invocations": 1,
+      "sql": null,
+      "sql_result": [],
+      "supporting_records": [],
+      "verification": "Clarification without data lookup",
+      "passed": true,
+      "seconds": 15.27,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 11,
+      "username": "buyer_dubai",
+      "role": "buyer",
+      "question": "What will the tomato price be next month?",
+      "answer": "I can't answer that from the available data: Price information is not available.",
+      "mode": "ai",
+      "tools_called": [
+        "cannot_answer"
+      ],
+      "gemini_invocations": 1,
+      "sql": null,
+      "sql_result": [],
+      "supporting_records": [],
+      "verification": "Declined because prices are absent from the schema",
+      "passed": true,
+      "seconds": 14.09,
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "number": 12,
+      "username": "buyer_dubai",
+      "role": "buyer",
+      "model": "gemini-3.5-flash-lite",
+      "question": "Which tomato lots have at least 40 kg available?",
+      "answer": "* Lot 2: 50 kg available (Al Ain Green Valley Farm, Abu Dhabi) \u2014 Harvested: 2026-11-08, Sell-by: 2026-11-23\n* Lot 3: 56 kg available (Al Ain Green Valley Farm, Abu Dhabi) \u2014 Harvested: 2026-11-14, Sell-by: 2026-11-27\n* Lot 14: 42 kg available (Al Dhaid Sun Farm, Sharjah) \u2014 Harvested: 2026-11-15, Sell-by: 2026-11-28",
+      "mode": "ai",
+      "tools_called": [
+        "available_produce"
+      ],
+      "gemini_invocations": 2,
+      "sql": "SELECT d.lot_id,d.available,d.unit FROM v_lot_details d JOIN units u ON u.unit_code=d.unit WHERE d.crop_name='Tomato' AND d.is_active=1 AND d.available>0.0005 AND (d.sell_by_date IS NULL OR d.sell_by_date>=CURDATE()) AND u.category='mass' AND d.available*u.to_base_factor>=40",
+      "sql_result": [
+        {
+          "lot_id": 2,
+          "available": 50.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 3,
+          "available": 56.0,
+          "unit": "kg"
+        },
+        {
+          "lot_id": 14,
+          "available": 42.0,
+          "unit": "kg"
+        }
+      ],
+      "supporting_records": [
+        {
+          "tool": "available_produce",
+          "rows": [
+            {
+              "lot_id": 2,
+              "crop_name": "Tomato",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-08",
+              "sell_by_date": "2026-11-23",
+              "available": 50.0,
+              "unit": "kg"
+            },
+            {
+              "lot_id": 3,
+              "crop_name": "Tomato",
+              "farm_name": "Al Ain Green Valley Farm",
+              "emirate": "Abu Dhabi",
+              "harvest_date": "2026-11-14",
+              "sell_by_date": "2026-11-27",
+              "available": 56.0,
+              "unit": "kg"
+            },
+            {
+              "lot_id": 14,
+              "crop_name": "Tomato",
+              "farm_name": "Al Dhaid Sun Farm",
+              "emirate": "Sharjah",
+              "harvest_date": "2026-11-15",
+              "sell_by_date": "2026-11-28",
+              "available": 42.0,
+              "unit": "kg"
+            }
+          ]
+        }
+      ],
+      "verification": "Returned records match the independent SQL result",
+      "passed": true,
+      "seconds": 18.01
+    }
+  ]
+}

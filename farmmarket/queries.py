@@ -226,7 +226,7 @@ def list_receipts(user: User, market_id=None, farm_id=None, crop_id=None, only_d
     if date_to:
         conds.append("received_date<=%s"); params.append(date_to)
     rows = db.query("SELECT receipt_id, request_id, market_name, crop_name, farm_name, allocated_quantity, received_quantity, "
-                    "discrepancy, unit, discrepancy_reason, received_date FROM v_receipts" + _where(conds) +
+                    "discrepancy, unit, discrepancy_reason, shortfall_disposition, received_date FROM v_receipts" + _where(conds) +
                     " ORDER BY receipt_id DESC", params)
     if crop_id:
         names = {c["crop_id"]: c["crop_name"] for c in crops(False)}

@@ -91,7 +91,8 @@ def requests(user):
 def deliveries(user):
     ui.show_flash()
     st.header("Confirm deliveries")
-    st.caption("Record the quantity you actually received. If it differs from the allocation, give a reason; the difference is stored on the receipt.")
+    st.caption("Explain any shortfall. Lost or damaged produce is removed from stock. "
+               "Choose returned to farm only when the missing quantity is physically back and fit for sale.")
     active = queries.list_allocations(user, status="ACTIVE")
     ui.table(active, ["allocation_id", "request_id", "crop_name", "farm_name", "quantity", "unit", "allocated_at"],
              empty="Nothing is waiting for delivery confirmation.")
@@ -103,8 +104,11 @@ def deliveries(user):
             recv = c1.number_input(f"Quantity received ({a['unit']})", value=float(a["quantity"]), step=1.0, format="%.3f")
             rdate = c2.date_input("Received on", value=today(), format="YYYY-MM-DD")
             why = st.text_input("Reason for the difference (required if received ≠ allocated)")
+            disposition = st.selectbox("If there is a shortfall", ["LOST_IN_TRANSIT", "RETURNED_TO_FARM"],
+                                       format_func=lambda value: {"LOST_IN_TRANSIT": "Lost in transit / damaged (not for sale)",
+                                                                 "RETURNED_TO_FARM": "Returned to farm and fit for sale"}[value])
             if st.form_submit_button("Confirm delivery"):
-                ok, rid = ui.run(buyer.confirm_delivery, user, a["allocation_id"], recv, rdate, why)
+                ok, rid = ui.run(buyer.confirm_delivery, user, a["allocation_id"], recv, rdate, why, disposition)
                 if ok:
                     ui.reset_form("deliver")
                     st.session_state["_flash"] = f"Delivery confirmed (receipt #{rid})."
@@ -114,4 +118,4 @@ def deliveries(user):
     only = c1.checkbox("Only deliveries with a discrepancy", key="dl_only")
     ui.table(queries.list_receipts(user, only_discrepancies=only),
              ["receipt_id", "request_id", "crop_name", "farm_name", "allocated_quantity", "received_quantity", "discrepancy", "unit",
-              "discrepancy_reason", "received_date"])
+              "discrepancy_reason", "shortfall_disposition", "received_date"])

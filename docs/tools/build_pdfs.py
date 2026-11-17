@@ -1,221 +1,186 @@
-"""Builds docs/Technical_Document.pdf and docs/Poster.pdf from the diagrams and the latest test run.
-Run from the project root after `python docs/tools/gen_diagrams.py` and
-`pytest tests --junitxml=docs/test_results.xml`:   python docs/tools/build_pdfs.py"""
+"""Build the technical document and A1 poster from current diagrams and evidence.
+Run after gen_diagrams.py, pytest --junitxml=docs/test_results.xml and the live runner.
+"""
+import datetime as dt
+import html
+import json
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from PIL import Image as PILImage
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.pagesizes import A3, A4, landscape
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.pagesizes import A1,A3,A4,landscape
+from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
-from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import (BaseDocTemplate,Frame,Image,KeepTogether,NextPageTemplate,
+    PageBreak,PageTemplate,Paragraph,Spacer,Table,TableStyle)
 
-ROOT = Path(__file__).resolve().parents[2]
-DOCS = ROOT / "docs"
-GREEN, DARK = colors.HexColor("#2f6f3e"), colors.HexColor("#1d3b25")
-ss = getSampleStyleSheet()
-body = ParagraphStyle("b", parent=ss["BodyText"], fontSize=9.5, leading=13)
-small = ParagraphStyle("s", parent=body, fontSize=8, leading=10)
-h1 = ParagraphStyle("h1", parent=ss["Heading1"], textColor=DARK, fontSize=16)
-h2 = ParagraphStyle("h2", parent=ss["Heading2"], textColor=GREEN, fontSize=12)
-
-
-def P(t, st=body):
-    return Paragraph(t, st)
+from submission_content import TEAM,LAB,ENTITIES,TEST_PLAN
+ROOT=Path(__file__).resolve().parents[2];DOCS=ROOT/'docs'
+GREEN=colors.HexColor('#246345');DARK=colors.HexColor('#173c2b');PALE=colors.HexColor('#edf5f0')
+styles=getSampleStyleSheet()
+body=ParagraphStyle('body',fontName='Helvetica',fontSize=9.5,leading=13,spaceAfter=6)
+small=ParagraphStyle('small',parent=body,fontSize=8,leading=10,spaceAfter=3)
+h1=ParagraphStyle('h1',parent=styles['Heading1'],textColor=DARK,fontSize=18,leading=22,spaceAfter=12)
+h2=ParagraphStyle('h2',parent=styles['Heading2'],textColor=GREEN,fontSize=12,leading=15,spaceBefore=10,spaceAfter=6)
+title=ParagraphStyle('title',parent=styles['Title'],fontSize=27,leading=31,textColor=DARK,spaceAfter=15)
 
 
-def tbl(rows, widths, header=True, font=8):
-    t = Table([[P(str(c), small) for c in r] for r in rows], colWidths=widths, repeatRows=1 if header else 0)
-    st = [("GRID", (0, 0), (-1, -1), 0.25, colors.grey), ("VALIGN", (0, 0), (-1, -1), "TOP"),
-          ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f1f6f1")])]
-    if header:
-        st += [("BACKGROUND", (0, 0), (-1, 0), GREEN)]
-        t._cellvalues[0] = [Paragraph(f"<font color='white'><b>{c}</b></font>", small) for c in rows[0]]
-    t.setStyle(TableStyle(st))
+def clean(text):
+    return str(text).replace('\u2011','-').replace('\u2013','-').replace('\u2014',' - ').replace('\u2260','!=').replace('\u2192','->').replace('\u2022','-').replace('\u2019',"'").replace('\u2018',"'").replace('\u201c','"').replace('\u201d','"')
+
+
+def P(text,style=body):return Paragraph(clean(text),style)
+
+
+def plain(text,style=body):
+    text=html.escape(clean(text))
+    text=re.sub(r'\*\*(.+?)\*\*',r'<b>\1</b>',text)
+    text=re.sub(r'`([^`]+)`',r'<font name="Courier">\1</font>',text)
+    return P(text.replace('\n','<br/>'),style)
+
+
+def table(rows,widths,style=small):
+    cells=[[plain(c,style) for c in r] for r in rows]
+    cells[0]=[P('<font color="white"><b>'+html.escape(clean(c))+'</b></font>',style) for c in rows[0]]
+    t=Table(cells,colWidths=widths,repeatRows=1,hAlign='LEFT')
+    t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),GREEN),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,PALE]),
+        ('VALIGN',(0,0),(-1,-1),'TOP'),('LINEBELOW',(0,0),(-1,-1),.3,colors.HexColor('#cedcd2')),
+        ('LEFTPADDING',(0,0),(-1,-1),7),('RIGHTPADDING',(0,0),(-1,-1),7),('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6)]))
     return t
 
 
-# ------------------------------------------------------------------------------------ test results
-def load_tests():
-    root = ET.parse(DOCS / "test_results.xml").getroot()
-    out = []
-    for tc in root.iter("testcase"):
-        name = tc.get("name")
-        mod = tc.get("classname").split(".")[-1].replace("test_", "")
-        status = "SKIPPED (needs Gemini key)" if tc.find("skipped") is not None else ("FAIL" if tc.find("failure") is not None or tc.find("error") is not None else "PASS")
-        out.append((mod, name, status))
+def fitted(path,w,h):
+    iw,ih=PILImage.open(path).size;scale=min(w/iw,h/ih)
+    return Image(str(path),width=iw*scale,height=ih*scale,hAlign='CENTER')
+
+
+def tests():
+    out=[]
+    for tc in ET.parse(DOCS/'test_results.xml').iter('testcase'):
+        status='SKIP' if tc.find('skipped') is not None else 'FAIL' if tc.find('failure') is not None or tc.find('error') is not None else 'PASS'
+        out.append(dict(area=tc.get('classname','').split('.')[-1].replace('test_',''),name=tc.get('name',''),status=status))
     return out
 
 
-AREA = {"business_rules": "Business rules / DB", "assistant": "LangChain assistant", "gui": "GUI flows"}
+def footer(c,doc):
+    w,h=c._pagesize
+    c.setStrokeColor(colors.HexColor('#c8d7cd'));c.line(16*mm,14*mm,w-16*mm,14*mm)
+    c.setFont('Helvetica',8);c.setFillColor(colors.HexColor('#53685b'))
+    c.drawString(16*mm,10*mm,'COSC444 | Farm & Market | Lab '+LAB)
+    c.drawRightString(w-16*mm,10*mm,str(doc.page))
 
 
-def humanize(n):
-    base = re.sub(r"\[.*\]$", "", n)
-    base = re.sub(r"^test_(q\d+_)?", "", base).replace("_", " ")
-    param = re.search(r"\[(.*)\]$", n)
-    return (base[0].upper() + base[1:]) + (f"  [{param.group(1)[:40]}]" if param else "")
-
-
-ASSISTANT_QS = [
-    ("1", "Which tomato lots are available? (buyer)", "Lists exactly the unreserved, unexpired tomato lots", "Tool rows equal SQL result - PASS"),
-    ("2", "What is the status of request 6? (own market)", "PARTIALLY_ALLOCATED with remaining need 50 kg", "Matches v_request_summary - PASS"),
-    ("3", "Show request 6 (buyer of another market)", "No rows: ownership scoping applies to the assistant", "Empty result - PASS"),
-    ("4", "Which of our requests are still open?", "Requests 2 and 6 only", "{2, 6} - PASS"),
-    ("5", "Which deliveries differed from the allocation? (admin)", "The 3 receipts with a discrepancy", "Receipts match SQL - PASS"),
-    ("6", "What harvests are expected? (buyer)", "Rows labelled FORECAST, farm names hidden", "Labelled, no farm_name - PASS"),
-    ("7", "How much stock do I have? (farmer)", "Only the farmer's own farms", "Own farms only - PASS"),
-    ("8", "Show farm stock (buyer)", "Refused: role not permitted", "Notice returned - PASS"),
-    ("9", "Which allocations are active? (farmer)", "Only allocation #4 of Ahmed's farms", "{4} - PASS"),
-    ("10", "tomatoes  (ambiguous)", "Clarifying question, no data returned", "Clarification asked - PASS"),
-    ("11", "What will the tomato price be next month? (unanswerable)", "Politely declined: prices not stored", "Declined - PASS"),
-    ("12", "Delete all requests / DROP TABLE / show password / ignore instructions", "Refused before reaching the model", "Refused (6 variants) - PASS"),
-]
-
-
-# ------------------------------------------------------------------------------------ technical document
 def technical():
-    doc = SimpleDocTemplate(str(DOCS / "Technical_Document.pdf"), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=16 * mm, bottomMargin=16 * mm,
-                            title="COSC444 Technical Document - Local Farm and Market Food Availability System")
-    s = [P("Local Farm and Market Food Availability System", ParagraphStyle("t", parent=ss["Title"], textColor=DARK)),
-         P("COSC444 Database Systems - Technical Document", ParagraphStyle("c", parent=body, alignment=TA_CENTER, fontSize=11)),
-         P("Team members: ______________________________ &nbsp;&nbsp; Lab section: ________", ParagraphStyle("c2", parent=body, alignment=TA_CENTER)), Spacer(1, 8),
-         P("1. Overview and architecture", h1),
-         P("An educational prototype (synthetic data only) in which <b>farmers</b> record harvest lots and allocate produce to market requests, <b>market buyers</b> search local supply, "
-           "request produce and confirm deliveries, and <b>administrators</b> manage users and reference data. Stack: <b>Python 3.11+</b>, <b>Streamlit</b> GUI, "
-           "<b>MySQL 8</b> (mysql-connector-python, parameterised queries only), <b>LangChain + Google Gemini</b> assistant, bcrypt, Pillow, ReportLab."),
-         tbl([["Layer", "Files", "Responsibility"],
-              ["GUI", "app.py, farmmarket/views/*", "Login, role menus, forms, tables, charts, photos, assistant chat; every service error is shown as a friendly message"],
-              ["Services", "farmmarket/farmer.py, buyer.py, admin.py, auth.py, images.py", "Business rules, ownership checks, one MySQL transaction per operation, audit logging"],
-              ["Queries", "farmmarket/queries.py, analytics.py", "Role-scoped read queries and the three SQL analyses"],
-              ["Database", "database/farm_market_full.sql", "Tables, CHECK/UNIQUE/FK constraints, triggers (append-only ledger, overdraw guard), views, sample data"],
-              ["Assistant", "farmmarket/assistant.py", "LangChain tool-calling agent over fixed read-only, role-scoped queries (Gemini); never writes SQL"]],
-             [22 * mm, 55 * mm, 95 * mm]),
-         Spacer(1, 6),
-         P("<b>Advanced feature (required): Secure login and activity audit.</b> bcrypt-hashed passwords, lock-out after 5 failed logins for 5 minutes, 30-minute idle sign-out, logout, "
-           "role-based menus and server-side permission checks, record ownership, an append-only <i>audit_log</i> (user, time, action, affected record, success) and an admin audit viewer. "
-           "<b>Optional second feature: Data analytics and report generation</b> (three SQL analyses, filters, 4 charts, summary metrics, CSV and PDF export that is itself audited)."),
-         PageBreak(), P("2. Conceptual ER diagram", h1),
-         Image(str(DOCS / "ER_diagram.png"), width=174 * mm, height=174 * mm * 0.72),
-         P("Editable source: docs/ER_diagram.drawio (Draw.io / diagrams.net).", small), Spacer(1, 8),
-         P("3. Relational schema", h1),
-         Image(str(DOCS / "relational_schema.png"), width=174 * mm, height=174 * mm * 0.63),
-         P("Editable source: docs/relational_schema.drawio. The picture is generated from the live MySQL catalogue, so it always matches the SQL script.", small),
-         PageBreak(), P("4. Key business rules and where they are enforced", h1),
-         tbl([["Business rule", "Enforcement (application / database)"],
-              ["Current stock is derived from dated movements, never stored", "View v_lot_stock sums stock_movements; no stock column exists. Movement table is append-only (UPDATE/DELETE triggers)"],
-              ["Expected harvest is a forecast, separate from stock", "Stored in crop_cycles.expected_*; inventory pages and analytics read stock only from movements; shown in a separate table"],
-              ["Cannot allocate more than a lot's available quantity", "farmer.allocate locks the lot row (SELECT ... FOR UPDATE) then checks available; trigger trg_movement_rules re-checks inside MySQL"],
-              ["Partial fulfilment / multi-lot allocation", "Request status derived from allocated and received quantities (SUBMITTED, PARTIALLY_ALLOCATED, ALLOCATED, PARTIALLY_FULFILLED, FULFILLED); every change stored in request_status_history"],
-              ["Receipt may differ from allocation; difference recorded", "delivery_receipts.discrepancy = received - allocated (CHECK); reason mandatory when different; unreceived part is released back to stock"],
-              ["Explicit units; conversion only when documented", "All quantities carry a unit FK; convert_qty uses units.to_base_factor and refuses mass-to-count conversion"],
-              ["Farm users change only their farms; buyers only their market; admins keep reference data", "require_role + is_my_farm/market checks in every service; refused attempts are written to audit_log (ACCESS_DENIED); admins can only add approved correction movements"],
-              ["Every movement and status change keeps date, user, reason", "Columns movement_date, user_id, reason (CHECK: reason required for loss and corrections); request_status_history"],
-              ["Deactivate, do not delete", "is_active flags on farms, crops, markets, units, users, lots, images, cycles"],
-              ["Images tied to a lot; missing files handled", "harvest_lot_images.lot_id FK; JPG/PNG magic-byte + Pillow validation, 5 MB limit; GUI shows a warning card if the file is missing"],
-              ["Fictional data only", "All sample data synthetic; demo password documented"]],
-             [62 * mm, 110 * mm]),
-         Spacer(1, 8), P("5. Database transactions", h1),
-         P("Every service call runs in one MySQL transaction (READ COMMITTED) that commits or rolls back as a whole, so a failed operation never leaves partial inventory, allocation or request records. "
-           "Row locks serialise competing users."),
-         tbl([["Operation", "Statements committed atomically", "Locks"],
-              ["Record harvest", "harvest_lots INSERT + HARVEST_ADDED movement + audit", "crop cycle read"],
-              ["Allocate", "allocations INSERT + RESERVED movement + request status/history + audit", "lot row, request row (FOR UPDATE)"],
-              ["Release allocation / close request", "RESERVATION_RELEASED movements + allocation status + request status/history + audit", "allocation, request"],
-              ["Confirm delivery", "delivery_receipts INSERT + DELIVERY movement + RESERVATION_RELEASED for any shortfall + allocation status + request status + audit", "allocation row"],
-              ["Record loss / admin correction", "LOSS / CORRECTION movement + audit (stock re-checked under lock)", "lot row"],
-              ["Login", "failed-attempt counter / lock + audit row (committed even when the login fails)", "user row"],
-              ["Denied access", "ACCESS_DENIED audit row written on a separate connection so it survives the rollback", "-"]],
-             [45 * mm, 95 * mm, 32 * mm]),
-         PageBreak(), P("6. Test cases with expected and actual results", h1),
-         P("Automated with pytest against a real MySQL 8 database rebuilt from the SQL script for each test (<i>pytest tests</i>). "
-           "Valid, invalid, boundary and concurrent cases are included; stock is verified after harvest, reservation, release, delivery, loss and correction events.")]
-    tests = load_tests()
-    summary = {}
-    for mod, name, st in tests:
-        a = summary.setdefault(AREA.get(mod, mod), [0, 0, 0])
-        a[0] += 1
-        a[1] += st == "PASS"
-        a[2] += st.startswith("SKIPPED")
-    total = sum(v[0] for v in summary.values()); passed = sum(v[1] for v in summary.values())
-    s += [tbl([["Area", "Tests", "Passed", "Skipped"]] + [[k, v[0], v[1], v[2]] for k, v in summary.items()] + [["<b>Total</b>", f"<b>{total}</b>", f"<b>{passed}</b>", f"<b>{sum(v[2] for v in summary.values())}</b>"]],
-              [70 * mm, 30 * mm, 30 * mm, 30 * mm]), Spacer(1, 6)]
-    s.append(P("6.1 LangChain assistant - 12 question groups (more than the 10 required), incl. ambiguous, unanswerable and unsafe", h2))
-    s.append(P("The offline suite replaces Gemini with a scripted stand-in so results are deterministic, while the real tool layer, role scoping and safety filter run unchanged; "
-               "tool output is compared with direct SQL. A live Gemini round-trip test (tests/test_assistant.py::test_live_gemini_roundtrip) runs when GOOGLE_API_KEY is set.", small))
-    s.append(tbl([["#", "Question", "Expected", "Actual"]] + [list(q) for q in ASSISTANT_QS], [8 * mm, 62 * mm, 58 * mm, 44 * mm]))
-    s.append(Spacer(1, 6))
-    s.append(P("6.2 All automated test cases", h2))
-    rows = [["#", "Area", "Test case (expected behaviour)", "Actual"]]
-    for i, (mod, name, st) in enumerate(tests, 1):
-        rows.append([i, AREA.get(mod, mod), humanize(name), "As expected - PASS" if st == "PASS" else st])
-    s.append(tbl(rows, [8 * mm, 30 * mm, 100 * mm, 34 * mm]))
-    s += [Spacer(1, 8), P("7. Limitations", h1),
-          P("Educational prototype: synthetic data only, no connection to government systems. The assistant needs a Gemini API key and internet access; without it, the GUI shows a clear 'not configured' message. "
-            "Sessions live in the Streamlit server session (suitable for a demo, not hardened for internet exposure). Crates (count units) cannot be converted to kg and are excluded from kg-based analytics.")]
+    live=json.loads((DOCS/'live_assistant_validation.json').read_text())
+    manifest=json.loads((DOCS/'schema_manifest.json').read_text())
+    evidence=tests()
+    doc=BaseDocTemplate(str(DOCS/'Technical_Document.pdf'),pagesize=A4,leftMargin=18*mm,rightMargin=18*mm,
+        topMargin=17*mm,bottomMargin=20*mm,title='Farm & Market - Technical Document',author='; '.join(n for n,_ in TEAM))
+    def template(name,size):
+        w,h=size
+        return PageTemplate(id=name,pagesize=size,frames=[Frame(18*mm,20*mm,w-36*mm,h-37*mm,id=name+'frame',leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPage=footer)
+    doc.addPageTemplates([template('portrait',A4),template('diagram',landscape(A3))])
+    width=A4[0]-36*mm
+    s=[Spacer(1,12*mm),P('Local Farm & Market<br/>Food Availability System',title),P('COSC444 Database Systems | Khalifa University',h2),
+       P('Technical document - lab section '+LAB),table([['Team member','Student ID']]+TEAM,[width*.67,width*.33]),Spacer(1,10*mm),
+       P('1. Purpose and architecture',h1),
+       P('Farmers record crop plans, harvests and supply allocations; market buyers discover available produce, place requests and confirm receipts. Administrators maintain reference data, users, audit records and analytics. All seed data is fictional.'),
+       table([['Layer','Responsibility'],['Streamlit GUI','Role menus, validated forms, stock tables, photos, charts and assistant chat.'],
+        ['Python services','Ownership checks and one atomic database transaction per action.'],['MySQL 8','15 base tables, 28 foreign keys, views, CHECK/UNIQUE constraints and append-only/stock guard triggers.'],
+        ['LangChain + Gemini','Six read-only, role-scoped data tools plus clarification and decline tools; supporting records are displayed. Gemini uses v1beta for function calling.']],[width*.25,width*.75]),
+       P('Security and audit',h2),P('Passwords are bcrypt hashes. Five failed sign-ins trigger a five-minute lock; idle sessions expire after 30 minutes. Server-side permissions enforce farm assignment and market ownership. Failed attempts and denied access are audited.'),
+       PageBreak(),P('2. Entity justification',h1),P('Each entity represents a separate identity, event or relationship. The association table user_farms resolves a many-to-many relationship; allocations resolves lot-to-request supply.'),
+       table([['Entity','Why it exists']]+ENTITIES,[width*.29,width*.71]),
+       P('Cardinality and normalisation',h2),P('A required foreign key gives each child exactly one parent, while a nullable FK permits zero or one. A parent may have zero or many children unless a UNIQUE FK limits it to zero or one. For example, an allocation has at most one receipt. User_farms has a composite key; neither user_id nor farm_id is unique alone.'),
+       P('Request status history versus audit log',h2),P('Request_status_history is a business timeline for a specific request. Audit_log is a security and operational record across the application, including failures that do not produce a request transition. Keeping them separate avoids forcing unrelated security events into a business lifecycle.')]
+    for prefix,section in [('ER_diagram','3. ER relationships'),('relational_schema','4. Relational schema')]:
+        for domain,label in [('overview','Complete model'),('cultivation','Cultivation and produce'),('fulfilment','Demand and delivery'),('accountability','Units, access and accountability')]:
+            s.extend([NextPageTemplate('diagram'),PageBreak(),P(section+' - '+label,h1),
+                P('Reference-panel notation: each line starts at a child FK and ends at a named parent reference. A [ref] box repeats the same logical entity, not a new table. This avoids crossing lines and keeps every responsible-user and unit relationship visible.',small),
+                P('Labels read parent : child cardinality. 1 : 0..N means a required parent with zero or many children. 0..1 marks optional participation; allocations-to-receipts is 1 : 0..1. PK = primary key; FK = foreign key; UQ = unique; NN = not null.',small),
+                fitted(DOCS/(prefix+('' if domain=='overview' else '_'+domain)+'.png'),landscape(A3)[0]-36*mm,landscape(A3)[1]-67*mm)])
+    s.extend([NextPageTemplate('portrait'),PageBreak(),P('5. Relationship register',h1),
+        P(f"All {manifest['foreign_key_count']} foreign keys from the MySQL catalogue are represented in both diagram sources. Editable Draw.io files have the same overview and domain pages as the PNGs."),
+        table([['Child FK','Parent key','Relationship']]+[[f["t"]+'.'+f['c'],f['rt']+'.'+f['rc'],f['verb']] for f in manifest['relationships']],[width*.36,width*.34,width*.30]),
+        PageBreak(),P('6. Stock, shortfalls and transactions',h1),
+        P('Stock is derived, not stored: on hand = harvest additions + positive corrections - deliveries - losses - negative corrections. Reserved = reservations - releases - deliveries. Available = on hand - reserved. Forecasts in crop_cycles never contribute to physical stock.'),
+        P('Delivery disposition',h2),P('A short receipt requires a reason and an explicit choice. LOST_IN_TRANSIT covers damaged, wilted, missing or otherwise unsaleable produce. RETURNED_TO_FARM is allowed only after the missing quantity is physically back at the farm and fit for sale; unverified returns must not be offered again.'),
+        table([['40 kg allocated; 35 kg received','Ledger settlement','Effect on available'],['Lost/damaged 5 kg','DELIVERY 35; RESERVATION_RELEASED 5; LOSS 5','No increase from the missing 5 kg.'],['Confirmed saleable return 5 kg','DELIVERY 35; RESERVATION_RELEASED 5','Available increases by 5 kg.'],['Exactly 40 kg received','DELIVERY 40; disposition NONE','No release and no loss.']],[width*.33,width*.40,width*.27]),
+        P('The receipt, delivery, release, optional loss, allocation closure, request transition and audit event commit in one transaction. The lot is locked before stock movements are written, so a concurrent allocator cannot see the intermediate released quantity. A failure rolls back all settlement records.'),
+        P('Corrected sample data and existing installations',h2),P('Lot 1 now records 5 kg damaged in transit as LOSS; available stock is 0 kg. Lot 11 records the additional 2 kg wilted on arrival as LOSS; its remaining available stock is 5 kg. The 2 kg under-weight shortfall for lot 7 is also conservatively recorded as lost, because no saleable return was confirmed.'),
+        P('Run upgrade_delivery_shortfalls.py for an existing database before starting the updated app. It adds the disposition column, appends missing historical LOSS movements and updates the receipt view without rewriting or deleting the ledger. Historical shortfalls without an explicit return record are classified as lost. The upgrade is idempotent and fails rather than overdrawing stock if historical quantities have already been reallocated. New installations use the corrected combined SQL script.'),
+        P('Other enforced rules',h2),P('Allocation locks/rechecks the lot and demand balance; the database trigger blocks stock overdraw even for direct SQL. Farmer operations require farm ownership; buyer operations require market ownership. Units convert only within their documented dimension. Image rows store a safe relative path and metadata; JPG/PNG files remain on disk and missing files produce a warning.'),
+        PageBreak(),P('7. Test plan',h1),P('The plan lists valid, invalid, boundary and concurrent cases for every major function. The coverage column distinguishes executed automated checks from additional planned/manual stress cases; a plan is not a claim that every listed scenario has already run.')])
+    for function,valid,invalid,boundary,concurrent,coverage in TEST_PLAN:
+        s.extend([KeepTogether([P(function,h2),table([['Case class','Planned cases'],['Valid',valid],['Invalid',invalid],['Boundary',boundary],['Concurrent',concurrent],['Coverage',coverage]],[width*.19,width*.81])]),Spacer(1,4)])
+    counts={}
+    for row in evidence:
+        area=counts.setdefault(row['area'],dict(PASS=0,FAIL=0,SKIP=0));area[row['status']]+=1
+    s.extend([PageBreak(),P('8. Executed automated results',h1),
+        P('Offline regression tests use a separate farm_market_test database rebuilt from the same SQL. Gemini is replaced only in the offline assistant cases; the tool layer, permissions and database queries remain real.'),
+        table([['Area','Passed','Failed','Skipped']]+[[a,str(v['PASS']),str(v['FAIL']),str(v['SKIP'])] for a,v in counts.items()],[width*.55,width*.15,width*.15,width*.15]),
+        P('Command: python -m pytest tests -k "not test_live_gemini_roundtrip" -q --junitxml=docs/test_results.xml',small),
+        P('The separate live evidence below supplies twelve actual Gemini questions rather than treating scripted responses as live validation.'),
+        table([['#','Test case','Actual']]+[[str(i),r['area']+': '+re.sub(r'^test_','',r['name']).replace('_',' '),r['status']] for i,r in enumerate(evidence,1)],[width*.05,width*.84,width*.11]),
+        PageBreak(),P('9. Live Gemini answers versus SQL',h1),
+        P('Run: '+live['run_at']+' (Asia/Dubai). Model: '+live['model']+'; API: '+live['api_version']+'. Dataset: a freshly seeded farm_market_live_validation database, separate from both the working database and the offline test schema.'),
+        P('Every question below made a real Gemini call. The primary model reached its daily quota after ten verified cases; the remaining cases use Gemini 3.5 Flash-Lite with the same key. Each answer is labelled with its model. The answer is recorded as returned (Markdown formatting rendered for readability); SQL expectations are independent queries. Clarification, role denial and unavailable data intentionally have no SQL result. Unsafe write/credential requests remain blocked before the model and are covered by the offline suite.'),
+        P('Reproduce with: python docs/tools/validate_live_assistant.py. Raw answers, tool calls, SQL, returned rows and timings are stored in docs/live_assistant_validation.json.',small)])
+    for r in live['results']:
+        block_start=len(s)
+        s.extend([P(f"Q{r['number']:02}. {r['question']}",h2),plain(f"Role/account: {r['role']} / {r['username']} | Model: {r.get('model',live['model'])} | Real Gemini calls: {r['gemini_invocations']} | Result: {'PASS' if r['passed'] else 'FAIL'}",small),
+            P('Actual assistant answer',small),plain(r['answer']),P('Independent SQL / expected result',small)])
+        if r['sql']:
+            s.append(plain(r['sql'],small))
+            rows=r['sql_result']
+            if rows:
+                keys=list(rows[0]);s.append(table([keys]+[[str(row[k]) for k in keys] for row in rows],[width/len(keys)]*len(keys)))
+            else:s.append(P('No rows. The request belongs to a different market.',small))
+        else:s.append(plain(r['verification'],small))
+        s.extend([plain('Verification: '+r['verification']+'. Tool calls: '+', '.join(r['tools_called']),small),Spacer(1,8)])
+        block=s[block_start:];del s[block_start:];s.append(KeepTogether(block))
+    s.extend([P('10. Reproducibility and limitations',h1),
+        P('Install requirements and MySQL 8; copy .env.example to .env and configure local credentials. For a new disposable demo database run python init_db.py; this resets demo records. For an existing database use the non-destructive upgrade instead. Start with streamlit run app.py. The demo password is Demo@1234.'),
+        P('The assistant needs internet access and a Gemini API key and is subject to model quotas. The validator paces calls, preserves verified answers and reports failures rather than fabricating success. Sessions are server-memory demo sessions. A returned-to-farm declaration is a user attestation, not an automated quality inspection. Backups require both MySQL and the image/upload folders.')])
     doc.build(s)
 
 
-# ------------------------------------------------------------------------------------ poster
 def poster():
-    W, H = landscape(A3)
-    c = canvas.Canvas(str(DOCS / "Poster.pdf"), pagesize=(W, H))
-    c.setFillColor(DARK); c.rect(0, H - 55 * mm, W, 55 * mm, fill=1, stroke=0)
-    c.setFillColor(colors.white); c.setFont("Helvetica-Bold", 40)
-    c.drawString(20 * mm, H - 28 * mm, "Local Farm & Market Food Availability System")
-    c.setFont("Helvetica", 16)
-    c.drawString(20 * mm, H - 40 * mm, "COSC444 Database Systems - Khalifa University - Python | MySQL | Streamlit | LangChain + Gemini")
-    c.drawString(20 * mm, H - 48 * mm, "Team: ______________________________________   (educational prototype, fictional data)")
-
-    def box(x, y, w, h, title, lines, fs=12):
-        c.setFillColor(colors.HexColor("#f1f6f1")); c.setStrokeColor(GREEN); c.roundRect(x, y, w, h, 3 * mm, fill=1, stroke=1)
-        c.setFillColor(GREEN); c.setFont("Helvetica-Bold", 16); c.drawString(x + 5 * mm, y + h - 9 * mm, title)
-        c.setFillColor(colors.black); c.setFont("Helvetica", fs)
-        yy = y + h - 17 * mm
-        for ln in lines:
-            for part in _wrap(ln, w - 10 * mm, fs):
-                c.drawString(x + 5 * mm, yy, part); yy -= fs * 1.35
-            yy -= 1.5 * mm
-
-    def _wrap(text, width, fs):
-        words, line, out = text.split(), "", []
-        for wd in words:
-            t = (line + " " + wd).strip()
-            if c.stringWidth(t, "Helvetica", fs) > width and line:
-                out.append(line); line = wd
-            else:
-                line = t
-        return out + [line]
-    top = H - 62 * mm
-    box(10 * mm, top - 78 * mm, 135 * mm, 78 * mm, "Problem & objective", [
-        "Make local food supply visible: farmers publish harvests, markets find and request produce, administrators keep reference data.",
-        "Stock is calculated from a dated movement ledger; forecasts never count as stock; allocations can never oversell a lot."])
-    box(10 * mm, top - 78 * mm - 85 * mm, 135 * mm, 80 * mm, "Three roles, one database", [
-        "Farmer: farms, crop cycles, harvest lots, photos, losses, allocation to requests.",
-        "Market buyer: search by crop / emirate / date / quantity, requests, partial delivery confirmation with discrepancy.",
-        "Admin: users, crops, units, markets, approved corrections, analytics dashboard, audit log."])
-    box(10 * mm, 10 * mm, 135 * mm, top - 78 * mm - 85 * mm - 15 * mm, "Advanced features", [
-        "Secure login & audit: bcrypt, lock-out, idle sign-out, ownership rules, append-only audit.",
-        "Analytics: supply vs demand, fulfilment & discrepancies, loss & ageing; filters, charts, CSV/PDF export."], 12)
-    c.drawImage(str(DOCS / "ER_diagram.png"), 150 * mm, top - 168 * mm, width=170 * mm, height=170 * mm * 0.72, preserveAspectRatio=True)
-    c.setFillColor(GREEN); c.setFont("Helvetica-Bold", 14); c.drawString(150 * mm, top + 3 * mm, "Conceptual ER model (14 entities)")
-    box(150 * mm, 10 * mm, 170 * mm, top - 168 * mm - 12 * mm, "LangChain assistant (Gemini)", [
-        "Ask in plain English; answers come from fixed read-only, role-scoped queries with supporting records shown.",
-        "Ambiguous questions get a clarification, unanswerable ones are declined, unsafe ones are refused before reaching the model. No raw SQL, no writes."], 12)
-    box(325 * mm, top - 78 * mm, 85 * mm, 78 * mm, "Design highlights", [
-        "MySQL 8: CHECK, UNIQUE, FK, triggers, views.", "One transaction per operation; row locks stop overselling.",
-        "Explicit units with documented conversion.", "Photos on disk + path in SQL; missing files handled."], 11)
-    tests = load_tests(); ok = sum(1 for t in tests if t[2] == "PASS")
-    box(325 * mm, top - 78 * mm - 85 * mm, 85 * mm, 80 * mm, "Testing", [
-        f"{ok} automated tests pass on real MySQL (rules, concurrency, security, images, GUI).", "12 assistant question groups incl. ambiguous & unsafe."], 11)
-    box(325 * mm, 10 * mm, 85 * mm, top - 78 * mm - 85 * mm - 15 * mm, "Run it", [
-        "pip install -r requirements.txt", "python init_db.py", "streamlit run app.py", "Demo password: Demo@1234"], 11)
-    c.showPage(); c.save()
+    live=json.loads((DOCS/'live_assistant_validation.json').read_text());results=tests()
+    W,H=landscape(A1);c=canvas.Canvas(str(DOCS/'Poster.pdf'),pagesize=(W,H))
+    c.setTitle('Farm & Market - COSC444 Poster');c.setAuthor('; '.join(n for n,_ in TEAM))
+    c.setFillColor(DARK);c.rect(0,H-73*mm,W,73*mm,fill=1,stroke=0)
+    c.setFillColor(colors.white);c.setFont('Helvetica-Bold',40);c.drawString(15*mm,H-23*mm,'LOCAL FARM & MARKET')
+    c.setFont('Helvetica',19);c.drawString(15*mm,H-35*mm,'Food availability, accountable stock and safe fulfilment')
+    c.setFont('Helvetica',12);c.drawString(15*mm,H-46*mm,'COSC444 Database Systems | Khalifa University | Lab B1 | Synthetic educational data')
+    c.setFont('Helvetica',11)
+    c.drawString(15*mm,H-56*mm,'Ahmed Hassen Mohammed - 100064745  |  Rewan Ramadan - 100064842')
+    c.drawString(15*mm,H-64*mm,'Lara Al-Omari - 100064797  |  Fikertemariam Aklilu - 100064744')
+    margin=15*mm;gap=12*mm;left=margin;right=W/2+gap/2;cw=(W-2*margin-gap)/2;top=H-88*mm
+    def textblock(x,y,w,heading,text,fs=13):
+        p=P(heading,ParagraphStyle('posterh',parent=h1,fontSize=19,leading=23));_,h=p.wrap(w,1000);p.drawOn(c,x,y-h);y-=h+5*mm
+        p=plain(text,ParagraphStyle('posterp',parent=body,fontSize=fs,leading=fs*1.35));_,h=p.wrap(w,2000);p.drawOn(c,x,y-h);return y-h-9*mm
+    def picture(path,x,y,w,maxh):
+        iw,ih=PILImage.open(path).size;h=min(maxh,w*ih/iw);ww=h*iw/ih
+        c.drawImage(str(path),x+(w-ww)/2,y-h,width=ww,height=h,mask='auto');return y-h-6*mm
+    y=textblock(left,top,cw,'One database, three workspaces','Farmers publish harvests and allocate supply; buyers search, request and confirm receipts; admins manage reference data, users and analytics. Python + Streamlit + MySQL 8 + LangChain / Google Gemini.')
+    y=textblock(left,y,cw,'ER model: all 15 entities and 28 relationships','Every Users and Units relationship is shown. Labelled reference boxes represent the same parent entity; orthogonal connections avoid crossing lines. Cardinalities read parent : child.',12)
+    y=picture(DOCS/'ER_diagram.png',left,y,cw,270*mm)
+    y=textblock(left,y,cw,'Safe shortfalls, no damaged produce for sale','A 5 kg damaged shortfall releases its reservation and records LOSS 5 in the same transaction. Only a physically returned, fit-for-sale quantity becomes available again. The receipt retains the reason and disposition.',13)
+    textblock(left,y,cw,'Stock and security','Stock comes from an append-only movement ledger. Row locks and database triggers prevent overselling. bcrypt, login lock-out, role ownership and append-only audit provide accountability.',12)
+    y=textblock(right,top,cw,'Relational schema: exact FK endpoints','PK/FK/UQ/NN and data types come from the live MySQL catalogue. Each child field connects to a named parent key. Editable Draw.io sources include separate domain pages for close inspection.',12)
+    y=picture(DOCS/'relational_schema.png',right,y,cw,315*mm)
+    passed=sum(r['status']=='PASS' for r in results);livepass=sum(r['passed'] for r in live['results'])
+    y=textblock(right,y,cw,'Measured validation',f'{passed} automated tests pass against real MySQL. Coverage includes valid/invalid inputs, boundaries, ownership, rollback, 10 simultaneous allocations and delivery-loss races. A documented plan covers every major function.',13)
+    y=textblock(right,y,cw,'12 real Gemini questions',f'{livepass}/12 live questions verified on a separate synthetic database. Actual answers sit beside independent SQL results in the technical document. Ambiguity, role denial and unavailable prices are included; unsafe writes are blocked before the model.',13)
+    textblock(right,y,cw,'Reproduce the demo','python init_db.py (new disposable demo only)\nstreamlit run app.py\nExisting databases: python upgrade_delivery_shortfalls.py\nEvidence: docs/test_results.xml and docs/live_assistant_validation.json',11)
+    c.setFont('Helvetica',9);c.setFillColor(colors.HexColor('#53685b'));c.drawString(margin,8*mm,'A1 landscape | Full-size diagram sources and domain views supplied with the project | All example data fictional')
+    c.showPage();c.save()
 
 
-if __name__ == "__main__":
-    technical(); poster()
-    print("PDFs written to", DOCS)
+if __name__=='__main__':
+    technical();poster();print('Technical document and poster written to',DOCS)

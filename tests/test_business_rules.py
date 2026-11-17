@@ -25,7 +25,7 @@ def audit(action, success=None):
 
 # ---------------------------------------------------------------- stock calculations
 def test_seed_stock_values_are_calculated_from_movements(fresh):
-    assert stock(1) == {"on_hand": D("5"), "reserved": D("0"), "available": D("5")}      # 100 harvested, 95 delivered
+    assert stock(1) == {"on_hand": D("0"), "reserved": D("0"), "available": D("0")}      # 95 delivered, 5 lost
     assert stock(5) == {"on_hand": D("70"), "reserved": D("40"), "available": D("30")}   # reserved 40
     assert stock(9)["on_hand"] == D("0")                                                  # fully lost
     assert stock(6) == {"on_hand": D("0.7"), "reserved": D("0"), "available": D("0.7")}  # 1.2 t - 0.5 t delivered
@@ -49,14 +49,15 @@ def test_record_harvest_creates_lot_and_movement_in_one_step(ahmed):
 
 # ---------------------------------------------------------------- allocation rules
 def test_cannot_allocate_more_than_lot_available(ahmed):
-    with pytest.raises(UserError, match="only 5 kg is available"):
+    with pytest.raises(UserError, match="only 0 kg is available"):
         farmer.allocate(ahmed, 1, 1, 6)
     assert stock(1)["reserved"] == D("0")
 
 
 def test_boundary_allocation_of_exactly_available_works(ahmed):
-    farmer.allocate(ahmed, 1, 1, 5)
-    assert stock(1) == {"on_hand": D("5"), "reserved": D("5"), "available": D("0")}
+    lot = farmer.record_harvest_lot(ahmed, 1, 5, "kg", TODAY)
+    farmer.allocate(ahmed, 1, lot, 5)
+    assert stock(lot) == {"on_hand": D("5"), "reserved": D("5"), "available": D("0")}
 
 
 def test_cannot_allocate_more_than_request_needs(ahmed):
@@ -103,12 +104,13 @@ def test_expired_lot_cannot_be_allocated(ahmed):
 
 
 # ---------------------------------------------------------------- delivery receipts
-def test_partial_delivery_records_discrepancy_and_frees_shortfall(ahmed, adcm):
+def test_partial_delivery_records_discrepancy_and_removes_lost_shortfall(ahmed, adcm):
     # allocation 4 = 40 kg cucumber for request 2 (Abu Dhabi Central)
-    buyer.confirm_delivery(adcm, 4, 35, TODAY, "5 kg bruised")
+    buyer.confirm_delivery(adcm, 4, 35, TODAY, "5 kg bruised", "LOST_IN_TRANSIT")
     rec = db.query_one("SELECT * FROM delivery_receipts WHERE allocation_id=4")
     assert (rec["allocated_quantity"], rec["received_quantity"], rec["discrepancy"]) == (D("40"), D("35"), D("-5"))
-    assert stock(5) == {"on_hand": D("35"), "reserved": D("0"), "available": D("35")}
+    assert stock(5) == {"on_hand": D("30"), "reserved": D("0"), "available": D("30")}
+    assert rec["shortfall_disposition"] == "LOST_IN_TRANSIT"
     r2 = [r for r in queries.list_requests(adcm) if r["request_id"] == 2][0]
     assert r2["status"] == "PARTIALLY_FULFILLED" and r2["received"] == D("95")
 
@@ -153,15 +155,15 @@ def test_unknown_unit_and_crop_rejected(ahmed, dubai):
 def test_loss_requires_reason_and_cannot_exceed_unreserved(ahmed):
     with pytest.raises(UserError, match="Reason is required"):
         farmer.record_loss(ahmed, 1, 1, "")
-    with pytest.raises(UserError, match="only 5 kg is unreserved"):
-        farmer.record_loss(ahmed, 1, 6, "spoiled")
-    farmer.record_loss(ahmed, 1, 2, "spoiled")
-    assert stock(1)["available"] == D("3")
+    with pytest.raises(UserError, match="only 0 kg is unreserved"):
+        farmer.record_loss(ahmed, 1, 1, "spoiled")
+    farmer.record_loss(ahmed, 2, 2, "spoiled")
+    assert stock(2)["available"] == D("48")
 
 
 def test_admin_correction_is_a_dated_logged_movement(admin1):
     admin.apply_correction(admin1, 1, "add", 3, "Scale recalibration")
-    assert stock(1)["on_hand"] == D("8")
+    assert stock(1)["on_hand"] == D("3")
     assert audit("STOCK_CORRECTION")
     with pytest.raises(UserError, match="Cannot remove"):
         admin.apply_correction(admin1, 1, "remove", 100, "oops")
@@ -292,11 +294,12 @@ def test_request_quantity_cannot_drop_below_committed(adcm):
 # ---------------------------------------------------------------- concurrency
 def test_concurrent_allocations_never_oversell(ahmed):
     """Ten simultaneous attempts to take 1 kg from a 5 kg lot: exactly five may succeed."""
+    lot = farmer.record_harvest_lot(ahmed, 1, 5, "kg", TODAY)
     results = []
     reqs = [buyer.create_request(__import__("conftest").user("buyer_dubai"), 1, 20, "kg", TODAY + dt.timedelta(days=3)) for _ in range(1)]
     def worker():
         try:
-            farmer.allocate(ahmed, reqs[0], 1, 1); results.append("ok")
+            farmer.allocate(ahmed, reqs[0], lot, 1); results.append("ok")
         except UserError:
             results.append("fail")
         except Exception:
@@ -304,7 +307,7 @@ def test_concurrent_allocations_never_oversell(ahmed):
     ts = [threading.Thread(target=worker) for _ in range(10)]
     [t.start() for t in ts]; [t.join() for t in ts]
     assert results.count("ok") == 5
-    assert stock(1) == {"on_hand": D("5"), "reserved": D("5"), "available": D("0")}
+    assert stock(lot) == {"on_hand": D("5"), "reserved": D("5"), "available": D("0")}
 
 
 def test_repeated_identical_submission_is_safe(ahmed):

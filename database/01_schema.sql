@@ -220,6 +220,7 @@ CREATE TABLE delivery_receipts (
   received_quantity  DECIMAL(12,3) NOT NULL,
   discrepancy        DECIMAL(12,3) NOT NULL COMMENT 'received - allocated (negative = shortfall)',
   discrepancy_reason VARCHAR(255) NULL,
+  shortfall_disposition VARCHAR(24) NOT NULL DEFAULT 'NONE',
   received_date      DATE NOT NULL,
   received_by        INT NOT NULL,
   created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -228,6 +229,9 @@ CREATE TABLE delivery_receipts (
   CONSTRAINT ck_rec_recv  CHECK (received_quantity >= 0),
   CONSTRAINT ck_rec_diff  CHECK (ABS(discrepancy - (received_quantity - allocated_quantity)) < 0.0005),
   CONSTRAINT ck_rec_reason CHECK (ABS(discrepancy) < 0.0005 OR CHAR_LENGTH(TRIM(COALESCE(discrepancy_reason,''))) > 0),
+  CONSTRAINT ck_rec_disposition CHECK (
+    (ABS(discrepancy) < 0.0005 AND shortfall_disposition = 'NONE') OR
+    (discrepancy < -0.0005 AND shortfall_disposition IN ('RETURNED_TO_FARM','LOST_IN_TRANSIT'))),
   CONSTRAINT fk_rec_alloc FOREIGN KEY (allocation_id) REFERENCES allocations(allocation_id),
   CONSTRAINT fk_rec_user  FOREIGN KEY (received_by) REFERENCES users(user_id)
 ) ENGINE=InnoDB;
@@ -362,7 +366,7 @@ JOIN farms f ON f.farm_id = cy.farm_id
 LEFT JOIN users u ON u.user_id = m.user_id;
 
 CREATE VIEW v_receipts AS
-SELECT d.receipt_id, d.allocation_id, d.allocated_quantity, d.received_quantity, d.discrepancy, d.discrepancy_reason,
+SELECT d.receipt_id, d.allocation_id, d.allocated_quantity, d.received_quantity, d.discrepancy, d.discrepancy_reason, d.shortfall_disposition,
   d.received_date, d.received_by, a.request_id, a.lot_id, a.unit, c.crop_name, f.farm_name, cy.farm_id,
   r.market_id, mk.market_name, mk.emirate AS market_emirate
 FROM delivery_receipts d

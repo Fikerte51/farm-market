@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Generated PDFs must retain their exact bytes.
+*.pdf binary

@@ -45,8 +45,11 @@ BASE_CSS = f"""
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&display=swap');
 html, body, [class*="css"], .stApp, [data-testid="stAppViewContainer"] {{ font-family: 'Work Sans', system-ui, sans-serif; }}
 .stApp {{ background: {SAND}; color: {INK}; }}
-#MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] {{ display: none !important; }}
+#MainMenu, footer, [data-testid="stToolbarActions"], [data-testid="stAppDeployButton"], [data-testid="stDecoration"] {{ display: none !important; }}
 [data-testid="stHeader"] {{ background: transparent; }}
+/* The toolbar also contains the control that reopens a collapsed sidebar. */
+[data-testid="stSidebarCollapseButton"] {{ visibility: visible !important; }}
+[data-testid="stExpandSidebarButton"] {{ color: {GREEN_DK}; background: {CARD}; border: 1px solid {BORDER}; border-radius: 8px; }}
 .block-container {{ padding-top: 3.2rem; padding-bottom: 4rem; max-width: 1240px; }}
 
 /* headings */

@@ -82,9 +82,10 @@ def close_request(user: User, request_id, reason) -> str:
     return new
 
 
-def confirm_delivery(user: User, allocation_id, received, received_date, reason=None) -> int:
-    """Record what was actually received. A different quantity creates a visible discrepancy
-    (a reason is then required) and any unreceived part of the reservation returns to stock."""
+def confirm_delivery(user: User, allocation_id, received, received_date, reason=None,
+                     shortfall_disposition=None) -> int:
+    """Only confirmed saleable returns become available. Damaged/missing produce
+    releases its reservation and is removed by a LOSS in the same transaction."""
     require_role(user, "buyer", "confirm delivery")
     recv = req_num(received, "Received quantity", allow_zero=True)
     rdate = req_date(received_date, "Received date")
@@ -106,18 +107,31 @@ def confirm_delivery(user: User, allocation_id, received, received_date, reason=
                             "(ask the farmer for a new allocation for extra produce).")
         diff = (recv - alloc_qty).quantize(Decimal("0.001"))
         why = req_text(reason, "Reason for the difference", required=abs(diff) >= EPS, max_len=200)
+        disposition = shortfall_disposition or "NONE"
+        if diff < -EPS:
+            if disposition not in ("RETURNED_TO_FARM", "LOST_IN_TRANSIT"):
+                raise UserError("Choose whether the shortfall was returned to farm or lost in transit.")
+        else:
+            disposition = "NONE"
+        # Keep a concurrent allocation from taking the released shortfall before LOSS.
+        cur.execute("SELECT lot_id FROM harvest_lots WHERE lot_id=%s FOR UPDATE", (a["lot_id"],))
+        cur.fetchone()
         cur.execute("INSERT INTO delivery_receipts (allocation_id, allocated_quantity, received_quantity, discrepancy, "
-                    "discrepancy_reason, received_date, received_by) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                    (allocation_id, alloc_qty, recv, diff, why, rdate, user.user_id))
+                    "discrepancy_reason, shortfall_disposition, received_date, received_by) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (allocation_id, alloc_qty, recv, diff, why, disposition, rdate, user.user_id))
         receipt_id = cur.lastrowid
         if recv > EPS:
             add_movement(cur, user, a["lot_id"], "DELIVERY", recv, a["unit"], f"Delivered to request #{a['request_id']}",
                          allocation_id, when=dt.datetime.combine(rdate, dt.time(12, 0)))
         if alloc_qty - recv > EPS:
             add_movement(cur, user, a["lot_id"], "RESERVATION_RELEASED", alloc_qty - recv, a["unit"],
-                         f"Delivery shortfall: {why}", allocation_id)
+                         f"{disposition}: {why}", allocation_id)
+            if disposition == "LOST_IN_TRANSIT":
+                add_movement(cur, user, a["lot_id"], "LOSS", alloc_qty - recv, a["unit"],
+                             f"Delivery shortfall: {why}", allocation_id,
+                             when=dt.datetime.combine(rdate, dt.time(12, 0)))
         cur.execute("UPDATE allocations SET status='DELIVERED', closed_at=NOW() WHERE allocation_id=%s", (allocation_id,))
         refresh_status(cur, user, a["request_id"], "Delivery confirmed")
         log_event(cur, user, "DELIVERY_CONFIRMED", "delivery_receipts", receipt_id,
-                  f"allocation #{allocation_id}: received {fmt(recv)} of {fmt(alloc_qty)} {a['unit']}")
+                  f"allocation #{allocation_id}: received {fmt(recv)} of {fmt(alloc_qty)} {a['unit']}; {disposition}")
     return receipt_id
