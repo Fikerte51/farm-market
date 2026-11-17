@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image as PILImage
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.pagesizes import A1,A3,A4,landscape
+from reportlab.lib.pagesizes import A1,A2,A4,landscape
 from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
@@ -83,7 +83,7 @@ def technical():
     def template(name,size):
         w,h=size
         return PageTemplate(id=name,pagesize=size,frames=[Frame(18*mm,20*mm,w-36*mm,h-37*mm,id=name+'frame',leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPage=footer)
-    doc.addPageTemplates([template('portrait',A4),template('diagram',landscape(A3))])
+    doc.addPageTemplates([template('portrait',A4),template('diagram',landscape(A2))])
     width=A4[0]-36*mm
     s=[Spacer(1,12*mm),P('Local Farm & Market<br/>Food Availability System',title),P('COSC444 Database Systems | Khalifa University',h2),
        P('Technical document - lab section '+LAB),table([['Team member','Student ID']]+TEAM,[width*.67,width*.33]),Spacer(1,10*mm),
@@ -97,14 +97,13 @@ def technical():
        table([['Entity','Why it exists']]+ENTITIES,[width*.29,width*.71]),
        P('Cardinality and normalisation',h2),P('A required foreign key gives each child exactly one parent, while a nullable FK permits zero or one. A parent may have zero or many children unless a UNIQUE FK limits it to zero or one. For example, an allocation has at most one receipt. User_farms has a composite key; neither user_id nor farm_id is unique alone.'),
        P('Request status history versus audit log',h2),P('Request_status_history is a business timeline for a specific request. Audit_log is a security and operational record across the application, including failures that do not produce a request transition. Keeping them separate avoids forcing unrelated security events into a business lifecycle.')]
-    for prefix,section in [('ER_diagram','3. ER relationships'),('relational_schema','4. Relational schema')]:
-        for domain,label in [('overview','Complete model'),('cultivation','Cultivation and produce'),('fulfilment','Demand and delivery'),('accountability','Units, access and accountability')]:
-            s.extend([NextPageTemplate('diagram'),PageBreak(),P(section+' - '+label,h1),
-                P('Reference-panel notation: each line starts at a child FK and ends at a named parent reference. A [ref] box repeats the same logical entity, not a new table. This avoids crossing lines and keeps every responsible-user and unit relationship visible.',small),
-                P('Labels read parent : child cardinality. 1 : 0..N means a required parent with zero or many children. 0..1 marks optional participation; allocations-to-receipts is 1 : 0..1. PK = primary key; FK = foreign key; UQ = unique; NN = not null.',small),
-                fitted(DOCS/(prefix+('' if domain=='overview' else '_'+domain)+'.png'),landscape(A3)[0]-36*mm,landscape(A3)[1]-67*mm)])
+    for prefix,section in [('ER_diagram','3. Connected ER diagram'),('relational_schema','4. Connected relational schema')]:
+        note=('Chen notation follows the classroom convention: each entity appears once as a rectangle, its selected attributes are ovals, and named relationship diamonds connect the actual entities. Primary keys are underlined; the relational schema below lists all implemented columns.' if prefix=='ER_diagram' else 'Every table appears once. Orthogonal FK connectors link child fields directly to their referenced parent keys. Arrows point to the parent. Brown = user FKs; purple = unit FKs; green = other FKs. PK = primary key; FK = foreign key; UQ = unique; NN = not null.')
+        s.extend([NextPageTemplate('diagram'),PageBreak(),P(section,h1),P(note,small),
+            P('The model contains 15 entities/tables and 28 implemented relationships. In the ER diagram, 1 means exactly one, 0..1 optional one, and 0..N optional many. The unique allocation FK limits each allocation to at most one receipt.',small),
+            fitted(DOCS/(prefix+'.png'),landscape(A2)[0]-36*mm,landscape(A2)[1]-67*mm)])
     s.extend([NextPageTemplate('portrait'),PageBreak(),P('5. Relationship register',h1),
-        P(f"All {manifest['foreign_key_count']} foreign keys from the MySQL catalogue are represented in both diagram sources. Editable Draw.io files have the same overview and domain pages as the PNGs."),
+        P(f"All {manifest['foreign_key_count']} foreign keys from the MySQL catalogue are represented in both diagram sources. Each diagram has one PNG and one editable, single-page Draw.io source."),
         table([['Child FK','Parent key','Relationship']]+[[f["t"]+'.'+f['c'],f['rt']+'.'+f['rc'],f['verb']] for f in manifest['relationships']],[width*.36,width*.34,width*.30]),
         PageBreak(),P('6. Stock, shortfalls and transactions',h1),
         P('Stock is derived, not stored: on hand = harvest additions + positive corrections - deliveries - losses - negative corrections. Reserved = reservations - releases - deliveries. Available = on hand - reserved. Forecasts in crop_cycles never contribute to physical stock.'),
@@ -168,17 +167,17 @@ def poster():
         iw,ih=PILImage.open(path).size;h=min(maxh,w*ih/iw);ww=h*iw/ih
         c.drawImage(str(path),x+(w-ww)/2,y-h,width=ww,height=h,mask='auto');return y-h-6*mm
     y=textblock(left,top,cw,'One database, three workspaces','Farmers publish harvests and allocate supply; buyers search, request and confirm receipts; admins manage reference data, users and analytics. Python + Streamlit + MySQL 8 + LangChain / Google Gemini.')
-    y=textblock(left,y,cw,'ER model: all 15 entities and 28 relationships','Every Users and Units relationship is shown. Labelled reference boxes represent the same parent entity; orthogonal connections avoid crossing lines. Cardinalities read parent : child.',12)
+    y=textblock(left,y,cw,'ER model: all 15 entities and 28 relationships','Entities are connected through relationship diamonds, with oval attributes and underlined primary keys. Users and Units link to the records that reference them; cardinalities appear beside the relationship diamonds.',12)
     y=picture(DOCS/'ER_diagram.png',left,y,cw,270*mm)
     y=textblock(left,y,cw,'Safe shortfalls, no damaged produce for sale','A 5 kg damaged shortfall releases its reservation and records LOSS 5 in the same transaction. Only a physically returned, fit-for-sale quantity becomes available again. The receipt retains the reason and disposition.',13)
     textblock(left,y,cw,'Stock and security','Stock comes from an append-only movement ledger. Row locks and database triggers prevent overselling. bcrypt, login lock-out, role ownership and append-only audit provide accountability.',12)
-    y=textblock(right,top,cw,'Relational schema: exact FK endpoints','PK/FK/UQ/NN and data types come from the live MySQL catalogue. Each child field connects to a named parent key. Editable Draw.io sources include separate domain pages for close inspection.',12)
+    y=textblock(right,top,cw,'Relational schema: exact FK endpoints','PK/FK/UQ/NN and data types come from the MySQL catalogue. Direct orthogonal connectors link child foreign keys to parent keys. Each table is shown once in a single connected model. Brown connectors refer to Users; purple connectors refer to Units; green connectors show the remaining foreign keys.',12)
     y=picture(DOCS/'relational_schema.png',right,y,cw,315*mm)
     passed=sum(r['status']=='PASS' for r in results);livepass=sum(r['passed'] for r in live['results'])
     y=textblock(right,y,cw,'Measured validation',f'{passed} automated tests pass against real MySQL. Coverage includes valid/invalid inputs, boundaries, ownership, rollback, 10 simultaneous allocations and delivery-loss races. A documented plan covers every major function.',13)
     y=textblock(right,y,cw,'12 real Gemini questions',f'{livepass}/12 live questions verified on a separate synthetic database. Actual answers sit beside independent SQL results in the technical document. Ambiguity, role denial and unavailable prices are included; unsafe writes are blocked before the model.',13)
     textblock(right,y,cw,'Reproduce the demo','python init_db.py (new disposable demo only)\nstreamlit run app.py\nExisting databases: python upgrade_delivery_shortfalls.py\nEvidence: docs/test_results.xml and docs/live_assistant_validation.json',11)
-    c.setFont('Helvetica',9);c.setFillColor(colors.HexColor('#53685b'));c.drawString(margin,8*mm,'A1 landscape | Full-size diagram sources and domain views supplied with the project | All example data fictional')
+    c.setFont('Helvetica',9);c.setFillColor(colors.HexColor('#53685b'));c.drawString(margin,8*mm,'A1 landscape | One PNG and editable Draw.io source supplied per diagram | All example data fictional')
     c.showPage();c.save()
 
 

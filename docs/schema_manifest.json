@@ -995,226 +995,203 @@
       "rc": "market_id"
     }
   ],
-  "domain_pages": {
-    "cultivation": [
-      "farms",
-      "crops",
-      "crop_cycles",
-      "harvest_lots",
-      "harvest_lot_images"
-    ],
-    "fulfilment": [
-      "markets",
-      "market_requests",
-      "allocations",
-      "delivery_receipts",
-      "request_status_history"
-    ],
-    "accountability": [
-      "units",
-      "users",
-      "user_farms",
-      "stock_movements",
-      "audit_log"
-    ]
-  },
-  "notation": "Each child FK points to a named parent reference. Labels are parent : child cardinality. [ref] repeats the same logical entity, not another table.",
+  "notation": "Connected Chen ER diagram and connected FK schema. No reference aliases.",
   "relationships": [
     {
       "t": "allocations",
       "c": "allocated_by",
       "rt": "users",
       "rc": "user_id",
-      "verb": "allocates"
+      "verb": "Allocates"
     },
     {
       "t": "allocations",
       "c": "lot_id",
       "rt": "harvest_lots",
       "rc": "lot_id",
-      "verb": "reserves"
+      "verb": "Reserves"
     },
     {
       "t": "allocations",
       "c": "request_id",
       "rt": "market_requests",
       "rc": "request_id",
-      "verb": "filled by"
+      "verb": "Fills"
     },
     {
       "t": "allocations",
       "c": "unit",
       "rt": "units",
       "rc": "unit_code",
-      "verb": "measures allocation"
+      "verb": "Measures allocation"
     },
     {
       "t": "audit_log",
       "c": "user_id",
       "rt": "users",
       "rc": "user_id",
-      "verb": "performs action"
+      "verb": "Performs"
     },
     {
       "t": "crop_cycles",
       "c": "crop_id",
       "rt": "crops",
       "rc": "crop_id",
-      "verb": "grows"
+      "verb": "Grows"
     },
     {
       "t": "crop_cycles",
       "c": "expected_unit",
       "rt": "units",
       "rc": "unit_code",
-      "verb": "measures forecast"
+      "verb": "Measures forecast"
     },
     {
       "t": "crop_cycles",
       "c": "farm_id",
       "rt": "farms",
       "rc": "farm_id",
-      "verb": "hosts"
+      "verb": "Hosts"
     },
     {
       "t": "delivery_receipts",
       "c": "allocation_id",
       "rt": "allocations",
       "rc": "allocation_id",
-      "verb": "confirmed by"
+      "verb": "Confirms"
     },
     {
       "t": "delivery_receipts",
       "c": "received_by",
       "rt": "users",
       "rc": "user_id",
-      "verb": "confirms receipt"
+      "verb": "Receives"
     },
     {
       "t": "harvest_lot_images",
       "c": "lot_id",
       "rt": "harvest_lots",
       "rc": "lot_id",
-      "verb": "has image"
+      "verb": "Has photo"
     },
     {
       "t": "harvest_lot_images",
       "c": "uploaded_by",
       "rt": "users",
       "rc": "user_id",
-      "verb": "uploads"
+      "verb": "Uploads"
     },
     {
       "t": "harvest_lots",
       "c": "crop_id",
       "rt": "crops",
       "rc": "crop_id",
-      "verb": "classifies lot"
+      "verb": "Classifies lot"
     },
     {
       "t": "harvest_lots",
       "c": "cycle_id",
       "rt": "crop_cycles",
       "rc": "cycle_id",
-      "verb": "yields"
+      "verb": "Yields"
     },
     {
       "t": "harvest_lots",
       "c": "unit",
       "rt": "units",
       "rc": "unit_code",
-      "verb": "measures harvest"
+      "verb": "Measures harvest"
     },
     {
       "t": "market_requests",
       "c": "created_by",
       "rt": "users",
       "rc": "user_id",
-      "verb": "creates request"
+      "verb": "Creates request"
     },
     {
       "t": "market_requests",
       "c": "crop_id",
       "rt": "crops",
       "rc": "crop_id",
-      "verb": "requests crop"
+      "verb": "Requests crop"
     },
     {
       "t": "market_requests",
       "c": "market_id",
       "rt": "markets",
       "rc": "market_id",
-      "verb": "places"
+      "verb": "Places"
     },
     {
       "t": "market_requests",
       "c": "unit",
       "rt": "units",
       "rc": "unit_code",
-      "verb": "measures request"
+      "verb": "Measures demand"
     },
     {
       "t": "request_status_history",
       "c": "changed_by",
       "rt": "users",
       "rc": "user_id",
-      "verb": "changes status"
+      "verb": "Changes status"
     },
     {
       "t": "request_status_history",
       "c": "request_id",
       "rt": "market_requests",
       "rc": "request_id",
-      "verb": "has transition"
+      "verb": "Has history"
     },
     {
       "t": "stock_movements",
       "c": "allocation_id",
       "rt": "allocations",
       "rc": "allocation_id",
-      "verb": "explains settlement"
+      "verb": "Settles"
     },
     {
       "t": "stock_movements",
       "c": "lot_id",
       "rt": "harvest_lots",
       "rc": "lot_id",
-      "verb": "has movement"
+      "verb": "Has movement"
     },
     {
       "t": "stock_movements",
       "c": "unit",
       "rt": "units",
       "rc": "unit_code",
-      "verb": "measures movement"
+      "verb": "Measures movement"
     },
     {
       "t": "stock_movements",
       "c": "user_id",
       "rt": "users",
       "rc": "user_id",
-      "verb": "records movement"
+      "verb": "Records movement"
     },
     {
       "t": "user_farms",
       "c": "farm_id",
       "rt": "farms",
       "rc": "farm_id",
-      "verb": "has assigned farmer"
+      "verb": "Assigned farm"
     },
     {
       "t": "user_farms",
       "c": "user_id",
       "rt": "users",
       "rc": "user_id",
-      "verb": "has assignment"
+      "verb": "Has assignment"
     },
     {
       "t": "users",
       "c": "market_id",
       "rt": "markets",
       "rc": "market_id",
-      "verb": "employs buyer"
+      "verb": "Employs buyer"
     }
   ]
 }

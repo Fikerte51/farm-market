@@ -79,7 +79,7 @@ Uses a separate throw-away database `farm_market_test` (rebuilt from the SQL scr
 
 ## 8. Regenerating the documents (optional)
 `python docs/tools/gen_diagrams.py` (diagrams from the live schema) -> `pytest tests --junitxml=docs/test_results.xml` -> `python docs/tools/build_pdfs.py`.
-Team details and lab B1 are maintained in `docs/tools/submission_content.py`. The technical document includes the test plan, all entity justifications, the complete relationship register, and actual live assistant answers. The poster is A1 landscape; diagram sources have an overview plus three readable domain pages.
+Team details and lab B1 are maintained in `docs/tools/submission_content.py`. The technical document includes the test plan, all entity justifications, the complete relationship register, and actual live assistant answers. The poster is A1 landscape; there is one connected Chen ER diagram and one connected relational schema, each supplied as PNG and editable Draw.io.
 
 ## Project structure
 ```
@@ -109,3 +109,8 @@ DB_NAME=farm_market_test python docs/tools/gen_diagrams.py
 python docs/tools/build_pdfs.py
 ```
 The live validator creates/rebuilds only `farm_market_live_validation`, never the working database. It resumes successful evidence, paces calls and saves errors honestly. If a model quota is exhausted, an explicitly selected supported model can finish remaining cases, e.g. `GEMINI_MODEL=gemini-3.5-flash-lite python docs/tools/validate_live_assistant.py`; model names are recorded per answer. Delete the evidence JSON only when a completely fresh live run is intended.
+
+## Essential diagram files
+- `docs/ER_diagram.png` and `docs/ER_diagram.drawio`: connected classroom-style Chen ER diagram (entities, relationship diamonds and oval attributes).
+- `docs/relational_schema.png` and `docs/relational_schema.drawio`: one connected schema with all tables, data types and foreign keys.
+There are no domain-specific image copies or SVG variants. Regenerating the diagrams retains only these canonical pairs.
