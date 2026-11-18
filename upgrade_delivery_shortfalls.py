@@ -14,9 +14,11 @@ def upgrade():
                         "AND table_name='delivery_receipts' AND column_name='shortfall_disposition'", (config.DB_NAME,)):
         db.execute_autocommit("ALTER TABLE delivery_receipts ADD COLUMN shortfall_disposition "
                               "VARCHAR(24) NOT NULL DEFAULT 'NONE' AFTER discrepancy_reason")
+    # DECIMAL(12,3) has no representable negative value between -0.001 and 0.
+    # Compare with zero to avoid MySQL 8.0 negative-literal coercion quirks.
     with db.transaction() as cur:
         cur.execute("SELECT d.*,a.lot_id,a.unit FROM delivery_receipts d JOIN allocations a "
-                    "ON a.allocation_id=d.allocation_id WHERE d.discrepancy < -0.0005 "
+                    "ON a.allocation_id=d.allocation_id WHERE d.discrepancy < 0 "
                     "AND d.shortfall_disposition='NONE' ORDER BY a.lot_id,d.receipt_id FOR UPDATE")
         receipts = cur.fetchall()
         for r in receipts:
@@ -37,8 +39,8 @@ def upgrade():
     if not db.query_one("SELECT 1 FROM information_schema.table_constraints WHERE constraint_schema=%s "
                         "AND table_name='delivery_receipts' AND constraint_name='ck_rec_disposition'", (config.DB_NAME,)):
         db.execute_autocommit("ALTER TABLE delivery_receipts ADD CONSTRAINT ck_rec_disposition CHECK "
-                              "((ABS(discrepancy)<0.0005 AND shortfall_disposition='NONE') OR "
-                              "(discrepancy < -0.0005 AND shortfall_disposition IN ('RETURNED_TO_FARM','LOST_IN_TRANSIT')))")
+                              "((discrepancy=0 AND shortfall_disposition='NONE') OR "
+                              "(discrepancy < 0 AND shortfall_disposition IN ('RETURNED_TO_FARM','LOST_IN_TRANSIT')))")
     schema = (config.BASE_DIR/'database/01_schema.sql').read_text()
     view = next(s for s in split_statements(schema) if s.startswith('CREATE VIEW v_receipts AS'))
     db.execute_autocommit(view.replace('CREATE VIEW','CREATE OR REPLACE VIEW',1))

@@ -148,50 +148,65 @@ def graph_points(edge,height):
 
 
 def er(tables,fks,uniq):
-    lines=['digraph G {','graph [rankdir=LR,splines=ortho,nodesep=.85,ranksep=.8,pad=.3,outputorder=edgesfirst];',
-           'node [fontname="Helvetica"];edge [dir=none,fontname="Helvetica",fontsize=11,labeldistance=2.3,labelangle=28];']
-    for t in tables:lines.append(f'{t} [shape=box,label="",style=invis,fixedsize=true,width=4.1,height=2.55];')
-    for i,f in enumerate(fks):
-        verb=REL[(f['t'],f['c'])]
-        label=verb.replace(' ','\\n',1) if len(verb)>13 else verb
-        lines.append(f'r{i} [shape=diamond,label={json.dumps(label)},fontsize=12,width=1.45,height=.8,margin=.12];')
-        nullable=next(r['n']=='YES' for r in tables[f['t']] if r['c']==f['c'])
-        ca='0..1' if nullable else '1';cb='0..1' if (f['t'],f['c']) in uniq else '0..N'
-        lines.append(f'{f["rt"]}:e -> r{i}:w [headlabel="{ca}"];')
-        lines.append(f'r{i}:e -> {f["t"]}:w [taillabel="{cb}"];')
-    lines.append('}')
-    data=layout('\n'.join(lines));w,h=map(float,data['bb'].split(',')[2:])
-    scene=Scene(w,h,'Connected ER diagram - Farm & Market','Chen notation: rectangles = entities; diamonds = relationships; ovals = selected attributes; underlined = primary key. Labels show min..max participation.')
-    objects={o['name']:o for o in data['objects']};ids={o['_gvid']:o['name'] for o in data['objects']}
-    centers={name:(float(o['pos'].split(',')[0]),h-float(o['pos'].split(',')[1])) for name,o in objects.items()}
-    for t in tables:
-        x,y=centers[t];scene.shape(t,'rectangle',(x-95,y-23,190,46),NAMES[t],fs=14,fill='#eef5f0')
+    """Compact conceptual model; implementation detail stays in the FK schema."""
+    core=set(tables)-{'user_farms','units','audit_log','request_status_history'}
+    tables={t:rows for t,rows in tables.items() if t in core}
+    fks=[f for f in fks if f['t'] in core and f['rt'] in core
+         and f['c'] not in {'uploaded_by','user_id','allocated_by','created_by','received_by'}]
+    fks.append(dict(t='farms',c='_assignment',rt='users',rc='user_id'))
+    centers={'users':(220,160),'farms':(780,160),'crop_cycles':(1340,160),'crops':(1900,160),
+             'markets':(220,660),'market_requests':(780,660),'harvest_lots':(1340,660),
+             'harvest_lot_images':(1900,660),'delivery_receipts':(220,1160),
+             'allocations':(780,1160),'stock_movements':(1340,1160)}
+    relpos={('farms','_assignment'):(500,160),('crop_cycles','farm_id'):(1060,160),
+        ('crop_cycles','crop_id'):(1620,160),('users','market_id'):(220,410),
+        ('market_requests','market_id'):(500,660),('market_requests','crop_id'):(1900,410),
+        ('harvest_lots','cycle_id'):(1340,410),('harvest_lots','crop_id'):(1620,410),
+        ('harvest_lot_images','lot_id'):(1620,660),('allocations','request_id'):(780,910),
+        ('allocations','lot_id'):(1060,910),('delivery_receipts','allocation_id'):(500,1160),
+        ('stock_movements','lot_id'):(1340,910),('stock_movements','allocation_id'):(1060,1160)}
+    centers={k:(220+(x-220)*1.22,y) for k,(x,y) in centers.items()}
+    relpos={k:(220+(x-220)*1.22,y) for k,(x,y) in relpos.items()}
+    scene=Scene(2530,1310,'Conceptual ER diagram - Farm & Market',
+        '11 core entities. Assigned to = M:N, farmer accounts only. Selected attributes shown; identifiers underlined. Full implementation appears in the relational schema.')
+    obstacles={}
+    for t,rows in tables.items():
+        x,y=centers[t];scene.shape(t,'rectangle',(x-120,y-30,240,60),NAMES[t],fs=20,fill='#eef5f0')
+        obstacles[t]=(x-175,y-115,350,230)
         attrs=ATTRS[t]
-        offsets=[(-77,-64),(77,-64),(-77,64),(77,64)] if len(attrs)==4 else [(0,-66),(-77,64),(77,64)] if len(attrs)==3 else [(-77,-64),(77,-64)]
+        offsets=[(-85,-82),(85,-82),(-85,82),(85,82)] if len(attrs)==4 else [(0,-82),(-85,82),(85,82)]
         for (column,label),(dx,dy) in zip(attrs,offsets):
-            assert any(r['c']==column for r in tables[t])
-            key=next(r['k']=='PRI' for r in tables[t] if r['c']==column)
+            key=next(r['k']=='PRI' for r in rows if r['c']==column)
             aid='attr_'+t+'_'+column;ox,oy=x+dx,y+dy
-            scene.shape(aid,'ellipse',(ox-67,oy-18,134,36),label,fs=11,key=key)
-            vx,vy=dx,dy;k=min(95/abs(vx) if vx else 1e6,23/abs(vy) if vy else 1e6)
-            a=(x+vx*k,y+vy*k)
-            ex,ey=x-ox,y-oy;d=math.sqrt((ex/67)**2+(ey/18)**2);b=(ox+ex/d,oy+ey/d)
-            scene.line('a_'+aid,t,aid,[a,b],color='#819086',orthogonal=False)
+            scene.shape(aid,'ellipse',(ox-80,oy-22,160,44),label,fs=14,key=key)
+            k=min(120/abs(dx) if dx else 1e6,30/abs(dy))
+            start=(x+dx*k,y+dy*k)
+            ex,ey=x-ox,y-oy;d=math.sqrt((ex/80)**2+(ey/22)**2)
+            scene.line('a_'+aid,t,aid,[start,(ox+ex/d,oy+ey/d)],color='#819086',orthogonal=False)
     for i,f in enumerate(fks):
-        o=objects['r'+str(i)];x,y=centers['r'+str(i)];rw=float(o['width'])*72;rh=float(o['height'])*72
-        verb=REL[(f['t'],f['c'])]
-        if len(verb)>13:verb=verb.replace(' ','\n',1)
-        scene.shape('r'+str(i),'diamond',(x-rw/2,y-rh/2,rw,rh),verb,fs=11,fill='#fcfbf6')
-    for i,e in enumerate(data['edges']):
-        a,b=ids[e['tail']],ids[e['head']];pts=graph_points(e,h)
-        if a in tables:
-            start=pts[0];pts=[(centers[a][0]+95,centers[a][1]),(start[0],centers[a][1]),start]+pts[1:]
-        if b in tables:
-            end=pts[-1];pts=pts[:-1]+[end,(end[0],centers[b][1]),(centers[b][0]-95,centers[b][1])]
-        scene.line('rel_edge_'+str(i),a,b,pts)
-        for label,position in [('headlabel','head_lp'),('taillabel','tail_lp')]:
-            if position in e:
-                x,y=map(float,e[position].split(','));scene.text((x,h-y),e[label],11)
+        name='r'+str(i);x,y=relpos[f['t'],f['c']]
+        verb='Assigned to' if f['c']=='_assignment' else REL[f['t'],f['c']]
+        if len(verb)>12:verb=verb.replace(' ','\n',1)
+        scene.shape(name,'diamond',(x-82,y-44,164,88),verb,fs=16,fill='#fcfbf6')
+        centers[name]=(x,y);obstacles[name]=(x-82,y-44,164,88)
+    ports=[];anchors=[];wires=[]
+    for i,f in enumerate(fks):
+        nullable=next((r['n']=='YES' for r in tables[f['t']] if r['c']==f['c']),False)
+        parentcard='M' if f['c']=='_assignment' else '0..1' if nullable else '1'
+        childcard='N' if f['c']=='_assignment' else '0..1' if (f['t'],f['c']) in uniq else '0..N'
+        for entity,card,index in [(f['rt'],parentcard,0),(f['t'],childcard,1)]:
+            diamond='r'+str(i);ex,ey=centers[entity];rx,ry=centers[diamond]
+            # All entity ports are lateral, clear of the attribute ovals.
+            eside=1 if rx>ex or (rx==ex and index==0) else -1
+            dside=-1 if ex<rx or (ex==rx and index==0) else 1
+            eb=obstacles[entity];db=obstacles[diamond]
+            ports.append(((ex+eside*(eb[2]/2+22),ey),(rx+dside*(db[2]/2+22),ry)))
+            anchors.append(((ex+eside*120,ey),(rx+dside*82,ry)))
+            wires.append((entity,diamond,card))
+    for i,((source,target,card),points,(start,end)) in enumerate(zip(wires,route_schema(obstacles,ports),anchors)):
+        scene.line('rel_edge_'+str(i),source,target,[start]+points+[end])
+        # Put cardinalities beside the diamond, away from all entity titles.
+        scene.text((points[-1][0],points[-1][1]-13),card,14)
     scene.save('ER_diagram')
 
 
@@ -302,7 +317,7 @@ def schema(tables,fks,uniq):
 
 def main():
     tables,fks,uniq=introspect();er(tables,fks,uniq);schema(tables,fks,uniq)
-    (OUT/'schema_manifest.json').write_text(json.dumps(dict(database=config.DB_NAME,table_count=len(tables),foreign_key_count=len(fks),tables=tables,foreign_keys=fks,notation='Connected Chen ER diagram and connected FK schema. No reference aliases.',relationships=[dict(f,verb=REL[(f['t'],f['c'])]) for f in fks]),indent=2))
+    (OUT/'schema_manifest.json').write_text(json.dumps(dict(database=config.DB_NAME,table_count=len(tables),foreign_key_count=len(fks),tables=tables,foreign_keys=fks,notation='Conceptual Chen ER: 11 core entities; Assigned to M:N replaces user_farms. Full relational schema: all 15 tables and 28 FKs.',conceptual_scope=dict(entity_count=11,omitted_tables=['user_farms','units','request_status_history','audit_log'],note='Units are quantity domains; history/audit and actor FKs appear in the relational schema. Farmer assignments are M:N.'),relationships=[dict(f,verb='Assigned to' if f['c']=='_assignment' else REL[(f['t'],f['c'])]) for f in fks]),indent=2))
     # These generated variants are obsolete. Keep only the two canonical pairs.
     for pattern in ['ER_diagram*.svg','relational_schema*.svg','ER_diagram_*.png','relational_schema_*.png']:
         for p in OUT.glob(pattern):p.unlink()

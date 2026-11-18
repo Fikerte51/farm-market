@@ -230,8 +230,8 @@ CREATE TABLE delivery_receipts (
   CONSTRAINT ck_rec_diff  CHECK (ABS(discrepancy - (received_quantity - allocated_quantity)) < 0.0005),
   CONSTRAINT ck_rec_reason CHECK (ABS(discrepancy) < 0.0005 OR CHAR_LENGTH(TRIM(COALESCE(discrepancy_reason,''))) > 0),
   CONSTRAINT ck_rec_disposition CHECK (
-    (ABS(discrepancy) < 0.0005 AND shortfall_disposition = 'NONE') OR
-    (discrepancy < -0.0005 AND shortfall_disposition IN ('RETURNED_TO_FARM','LOST_IN_TRANSIT'))),
+    (discrepancy = 0 AND shortfall_disposition = 'NONE') OR
+    (discrepancy < 0 AND shortfall_disposition IN ('RETURNED_TO_FARM','LOST_IN_TRANSIT'))),
   CONSTRAINT fk_rec_alloc FOREIGN KEY (allocation_id) REFERENCES allocations(allocation_id),
   CONSTRAINT fk_rec_user  FOREIGN KEY (received_by) REFERENCES users(user_id)
 ) ENGINE=InnoDB;

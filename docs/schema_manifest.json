@@ -995,7 +995,17 @@
       "rc": "market_id"
     }
   ],
-  "notation": "Connected Chen ER diagram and connected FK schema. No reference aliases.",
+  "notation": "Conceptual Chen ER: 11 core entities; Assigned to M:N replaces user_farms. Full relational schema: all 15 tables and 28 FKs.",
+  "conceptual_scope": {
+    "entity_count": 11,
+    "omitted_tables": [
+      "user_farms",
+      "units",
+      "request_status_history",
+      "audit_log"
+    ],
+    "note": "Units are quantity domains; history/audit and actor FKs appear in the relational schema. Farmer assignments are M:N."
+  },
   "relationships": [
     {
       "t": "allocations",

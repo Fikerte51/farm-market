@@ -98,12 +98,12 @@ def technical():
        P('Cardinality and normalisation',h2),P('A required foreign key gives each child exactly one parent, while a nullable FK permits zero or one. A parent may have zero or many children unless a UNIQUE FK limits it to zero or one. For example, an allocation has at most one receipt. User_farms has a composite key; neither user_id nor farm_id is unique alone.'),
        P('Request status history versus audit log',h2),P('Request_status_history is a business timeline for a specific request. Audit_log is a security and operational record across the application, including failures that do not produce a request transition. Keeping them separate avoids forcing unrelated security events into a business lifecycle.')]
     for prefix,section in [('ER_diagram','3. Connected ER diagram'),('relational_schema','4. Connected relational schema')]:
-        note=('Chen notation follows the classroom convention: each entity appears once as a rectangle, its selected attributes are ovals, and named relationship diamonds connect the actual entities. Primary keys are underlined; the relational schema below lists all implemented columns.' if prefix=='ER_diagram' else 'Every table appears once. Orthogonal FK connectors link child fields directly to their referenced parent keys. Arrows point to the parent. Brown = user FKs; purple = unit FKs; green = other FKs. PK = primary key; FK = foreign key; UQ = unique; NN = not null.')
+        note=('Chen notation follows the classroom convention: each entity appears once as a rectangle, its selected attributes are ovals, and named relationship diamonds connect the actual entities. Identifiers are underlined. The key-only user_farms table is represented by an Assigned to M:N relationship between Users (farmer accounts) and Farms. Units are quantity domains; history, audit and actor details appear in the full relational schema.' if prefix=='ER_diagram' else 'Every table appears once. Orthogonal FK connectors link child fields directly to their referenced parent keys. Arrows point to the parent. Brown = user FKs; purple = unit FKs; green = other FKs. PK = primary key; FK = foreign key; UQ = unique; NN = not null.')
         s.extend([NextPageTemplate('diagram'),PageBreak(),P(section,h1),P(note,small),
-            P('The model contains 15 entities/tables and 28 implemented relationships. In the ER diagram, 1 means exactly one, 0..1 optional one, and 0..N optional many. The unique allocation FK limits each allocation to at most one receipt.',small),
+            P('The ER contains the 11 core business entities; the relational schema contains all 15 tables and 28 foreign keys. M:N expresses many farmers assigned to many farms. For other relationships, 1 means exactly one, 0..1 optional one, and 0..N optional many. Each allocation has at most one receipt.',small),
             fitted(DOCS/(prefix+'.png'),landscape(A2)[0]-36*mm,landscape(A2)[1]-67*mm)])
     s.extend([NextPageTemplate('portrait'),PageBreak(),P('5. Relationship register',h1),
-        P(f"All {manifest['foreign_key_count']} foreign keys from the MySQL catalogue are represented in both diagram sources. Each diagram has one PNG and one editable, single-page Draw.io source."),
+        P(f"All {manifest['foreign_key_count']} foreign keys from the MySQL catalogue are represented in the relational schema. The conceptual ER deliberately omits implementation-only tables and user responsibility links for readability; those details are preserved here and in the schema. Each diagram has one PNG and one editable, single-page Draw.io source."),
         table([['Child FK','Parent key','Relationship']]+[[f["t"]+'.'+f['c'],f['rt']+'.'+f['rc'],f['verb']] for f in manifest['relationships']],[width*.36,width*.34,width*.30]),
         PageBreak(),P('6. Stock, shortfalls and transactions',h1),
         P('Stock is derived, not stored: on hand = harvest additions + positive corrections - deliveries - losses - negative corrections. Reserved = reservations - releases - deliveries. Available = on hand - reserved. Forecasts in crop_cycles never contribute to physical stock.'),
@@ -111,7 +111,7 @@ def technical():
         table([['40 kg allocated; 35 kg received','Ledger settlement','Effect on available'],['Lost/damaged 5 kg','DELIVERY 35; RESERVATION_RELEASED 5; LOSS 5','No increase from the missing 5 kg.'],['Confirmed saleable return 5 kg','DELIVERY 35; RESERVATION_RELEASED 5','Available increases by 5 kg.'],['Exactly 40 kg received','DELIVERY 40; disposition NONE','No release and no loss.']],[width*.33,width*.40,width*.27]),
         P('The receipt, delivery, release, optional loss, allocation closure, request transition and audit event commit in one transaction. The lot is locked before stock movements are written, so a concurrent allocator cannot see the intermediate released quantity. A failure rolls back all settlement records.'),
         P('Corrected sample data and existing installations',h2),P('Lot 1 now records 5 kg damaged in transit as LOSS; available stock is 0 kg. Lot 11 records the additional 2 kg wilted on arrival as LOSS; its remaining available stock is 5 kg. The 2 kg under-weight shortfall for lot 7 is also conservatively recorded as lost, because no saleable return was confirmed.'),
-        P('Run upgrade_delivery_shortfalls.py for an existing database before starting the updated app. It adds the disposition column, appends missing historical LOSS movements and updates the receipt view without rewriting or deleting the ledger. Historical shortfalls without an explicit return record are classified as lost. The upgrade is idempotent and fails rather than overdrawing stock if historical quantities have already been reallocated. New installations use the corrected combined SQL script.'),
+        P('Run upgrade_delivery_shortfalls.py for an existing database before starting the updated app. It adds the disposition column, appends missing historical LOSS movements and updates the receipt view without rewriting or deleting the ledger. Historical shortfalls without an explicit return record are classified as lost. The upgrade is idempotent and fails rather than overdrawing stock if historical quantities have already been reallocated. New installations use the corrected combined SQL script. The upgrade compares the three-decimal discrepancy with zero (negative means shortfall), avoiding the reported MySQL 8.0 negative fractional literal comparison issue.'),
         P('Other enforced rules',h2),P('Allocation locks/rechecks the lot and demand balance; the database trigger blocks stock overdraw even for direct SQL. Farmer operations require farm ownership; buyer operations require market ownership. Units convert only within their documented dimension. Image rows store a safe relative path and metadata; JPG/PNG files remain on disk and missing files produce a warning.'),
         PageBreak(),P('7. Test plan',h1),P('The plan lists valid, invalid, boundary and concurrent cases for every major function. The coverage column distinguishes executed automated checks from additional planned/manual stress cases; a plan is not a claim that every listed scenario has already run.')])
     for function,valid,invalid,boundary,concurrent,coverage in TEST_PLAN:
@@ -149,36 +149,8 @@ def technical():
 
 
 def poster():
-    live=json.loads((DOCS/'live_assistant_validation.json').read_text());results=tests()
-    W,H=landscape(A1);c=canvas.Canvas(str(DOCS/'Poster.pdf'),pagesize=(W,H))
-    c.setTitle('Farm & Market - COSC444 Poster');c.setAuthor('; '.join(n for n,_ in TEAM))
-    c.setFillColor(DARK);c.rect(0,H-73*mm,W,73*mm,fill=1,stroke=0)
-    c.setFillColor(colors.white);c.setFont('Helvetica-Bold',40);c.drawString(15*mm,H-23*mm,'LOCAL FARM & MARKET')
-    c.setFont('Helvetica',19);c.drawString(15*mm,H-35*mm,'Food availability, accountable stock and safe fulfilment')
-    c.setFont('Helvetica',12);c.drawString(15*mm,H-46*mm,'COSC444 Database Systems | Khalifa University | Lab B1 | Synthetic educational data')
-    c.setFont('Helvetica',11)
-    c.drawString(15*mm,H-56*mm,'Ahmed Hassen Mohammed - 100064745  |  Rewan Ramadan - 100064842')
-    c.drawString(15*mm,H-64*mm,'Lara Al-Omari - 100064797  |  Fikertemariam Aklilu - 100064744')
-    margin=15*mm;gap=12*mm;left=margin;right=W/2+gap/2;cw=(W-2*margin-gap)/2;top=H-88*mm
-    def textblock(x,y,w,heading,text,fs=13):
-        p=P(heading,ParagraphStyle('posterh',parent=h1,fontSize=19,leading=23));_,h=p.wrap(w,1000);p.drawOn(c,x,y-h);y-=h+5*mm
-        p=plain(text,ParagraphStyle('posterp',parent=body,fontSize=fs,leading=fs*1.35));_,h=p.wrap(w,2000);p.drawOn(c,x,y-h);return y-h-9*mm
-    def picture(path,x,y,w,maxh):
-        iw,ih=PILImage.open(path).size;h=min(maxh,w*ih/iw);ww=h*iw/ih
-        c.drawImage(str(path),x+(w-ww)/2,y-h,width=ww,height=h,mask='auto');return y-h-6*mm
-    y=textblock(left,top,cw,'One database, three workspaces','Farmers publish harvests and allocate supply; buyers search, request and confirm receipts; admins manage reference data, users and analytics. Python + Streamlit + MySQL 8 + LangChain / Google Gemini.')
-    y=textblock(left,y,cw,'ER model: all 15 entities and 28 relationships','Entities are connected through relationship diamonds, with oval attributes and underlined primary keys. Users and Units link to the records that reference them; cardinalities appear beside the relationship diamonds.',12)
-    y=picture(DOCS/'ER_diagram.png',left,y,cw,270*mm)
-    y=textblock(left,y,cw,'Safe shortfalls, no damaged produce for sale','A 5 kg damaged shortfall releases its reservation and records LOSS 5 in the same transaction. Only a physically returned, fit-for-sale quantity becomes available again. The receipt retains the reason and disposition.',13)
-    textblock(left,y,cw,'Stock and security','Stock comes from an append-only movement ledger. Row locks and database triggers prevent overselling. bcrypt, login lock-out, role ownership and append-only audit provide accountability.',12)
-    y=textblock(right,top,cw,'Relational schema: exact FK endpoints','PK/FK/UQ/NN and data types come from the MySQL catalogue. Direct orthogonal connectors link child foreign keys to parent keys. Each table is shown once in a single connected model. Brown connectors refer to Users; purple connectors refer to Units; green connectors show the remaining foreign keys.',12)
-    y=picture(DOCS/'relational_schema.png',right,y,cw,315*mm)
-    passed=sum(r['status']=='PASS' for r in results);livepass=sum(r['passed'] for r in live['results'])
-    y=textblock(right,y,cw,'Measured validation',f'{passed} automated tests pass against real MySQL. Coverage includes valid/invalid inputs, boundaries, ownership, rollback, 10 simultaneous allocations and delivery-loss races. A documented plan covers every major function.',13)
-    y=textblock(right,y,cw,'12 real Gemini questions',f'{livepass}/12 live questions verified on a separate synthetic database. Actual answers sit beside independent SQL results in the technical document. Ambiguity, role denial and unavailable prices are included; unsafe writes are blocked before the model.',13)
-    textblock(right,y,cw,'Reproduce the demo','python init_db.py (new disposable demo only)\nstreamlit run app.py\nExisting databases: python upgrade_delivery_shortfalls.py\nEvidence: docs/test_results.xml and docs/live_assistant_validation.json',11)
-    c.setFont('Helvetica',9);c.setFillColor(colors.HexColor('#53685b'));c.drawString(margin,8*mm,'A1 landscape | One PNG and editable Draw.io source supplied per diagram | All example data fictional')
-    c.showPage();c.save()
+    from poster_layout import build_poster
+    build_poster(DOCS, TEAM, LAB, tests())
 
 
 if __name__=='__main__':
