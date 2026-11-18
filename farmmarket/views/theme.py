@@ -70,7 +70,7 @@ h1, h2, h3, [data-testid="stHeading"] h1, [data-testid="stHeading"] h2, [data-te
 .wslabel {{ font-size: .8rem; letter-spacing: .11em; font-weight: 600; color: #5c6862; margin: 0 .9rem .7rem; text-transform: uppercase; }}
 [data-testid="stSidebar"] [data-testid="stElementContainer"]:has(> [data-testid="stRadio"]),
 [data-testid="stSidebar"] [data-testid="stRadio"] {{ width: 100%; }}
-[data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] {{ gap: .3rem; min-height: calc(100dvh - 12rem); justify-content: flex-start; }}
+[data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] {{ gap: .3rem; justify-content: flex-start; }}
 [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] {{ box-sizing: border-box; width: 100%; margin: 0; min-height: 54px; padding: .85rem 1rem; border-radius: 9px; cursor: pointer; transition: background .15s; align-items: center; }}
 [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:hover {{ background: #eef5f1; }}
 /* Keep native radio inputs accessible; hide only their decorative circles. */
@@ -88,6 +88,13 @@ h1, h2, h3, [data-testid="stHeading"] h1, [data-testid="stHeading"] h2, [data-te
 .userbox {{ border-top: 1px solid {BORDER}; margin-top: 1.6rem; padding-top: 1rem; }}
 .userbox .n {{ font-weight: 600; font-size: 1.05rem; }}
 .userbox .u {{ color: {MUTED}; font-size: .9rem; }}
+[data-testid="stSidebarUserContent"] {{ padding-bottom: 180px; }}
+[data-testid="stSidebar"] [data-testid="stLayoutWrapper"]:has(> .st-key-sidebar_footer) {{
+  position: fixed; left: 20px; bottom: 16px; width: min(259px, calc(100vw - 40px));
+  z-index: 10; background: {CARD};
+  padding: .7rem .4rem 1rem; border-top: 1px solid {BORDER}; }}
+[data-testid="stSidebar"][data-collapsed="true"] [data-testid="stLayoutWrapper"]:has(> .st-key-sidebar_footer) {{ display: none; }}
+.st-key-sidebar_footer .userbox {{ border: 0; margin: 0 0 .5rem; padding: 0; }}
 [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] {{ border: none; background: transparent; color: {GREEN}; font-weight: 600; justify-content: flex-start; padding-left: .4rem; }}
 [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover {{ background: #eef3ee; color: {GREEN_DK}; }}
 

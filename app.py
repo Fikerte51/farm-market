@@ -103,12 +103,11 @@ def main():
         choice = st.radio("Menu", [p[0] for p in pages], key="nav", label_visibility="collapsed",
                           format_func=lambda n: f":material/{ICON.get(n, 'chevron_right')}:  {n}")
         sub = user.market_name if user.market_name else user.role
-        st.markdown(f'<div class="userbox"><div class="n">{user.full_name}</div><div class="u">{user.username} · {sub}</div></div>',
-                    unsafe_allow_html=True)
-        if st.button("Log out", icon=":material/logout:", key="logout_btn"):
-            sign_out()
-        with st.expander("Change my password"):
-            shared_views.change_password(user)
+        with st.container(key="sidebar_footer"):
+            st.markdown(f'<div class="userbox"><div class="n">{user.full_name}</div><div class="u">{user.username} · {sub}</div></div>',
+                        unsafe_allow_html=True)
+            if st.button("Log out", icon=":material/logout:", key="logout_btn"):
+                sign_out()
 
     render = dict(pages)[choice]
     try:
