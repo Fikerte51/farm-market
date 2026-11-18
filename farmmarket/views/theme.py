@@ -91,7 +91,7 @@ h1, h2, h3, [data-testid="stHeading"] h1, [data-testid="stHeading"] h2, [data-te
 [data-testid="stSidebarUserContent"] {{ padding-bottom: 180px; }}
 [data-testid="stSidebar"] [data-testid="stLayoutWrapper"]:has(> .st-key-sidebar_footer) {{
   position: fixed; left: 20px; bottom: 16px; width: min(259px, calc(100vw - 40px));
-  z-index: 10; background: {CARD};
+  z-index: 10; background: {CARD}; max-height: calc(100dvh - 80px); overflow-y: auto;
   padding: .7rem .4rem 1rem; border-top: 1px solid {BORDER}; }}
 [data-testid="stSidebar"][data-collapsed="true"] [data-testid="stLayoutWrapper"]:has(> .st-key-sidebar_footer) {{ display: none; }}
 .st-key-sidebar_footer .userbox {{ border: 0; margin: 0 0 .5rem; padding: 0; }}

@@ -108,6 +108,8 @@ def main():
                         unsafe_allow_html=True)
             if st.button("Log out", icon=":material/logout:", key="logout_btn"):
                 sign_out()
+            with st.expander("Change my password"):
+                shared_views.change_password(user)
 
     render = dict(pages)[choice]
     try:
