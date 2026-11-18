@@ -79,7 +79,7 @@ Uses a separate throw-away database `farm_market_test` (rebuilt from the SQL scr
 
 ## 8. Regenerating the documents (optional)
 `python docs/tools/gen_diagrams.py` (diagrams from the live schema) -> `pytest tests --junitxml=docs/test_results.xml` -> `python docs/tools/build_pdfs.py`.
-Team details and lab B1 are maintained in `docs/tools/submission_content.py`. The technical document includes the test plan, all entity justifications, the complete relationship register, and actual live assistant answers. The poster is A1 landscape; there is one conceptual Chen ER diagram (11 core entities, with farmer-to-farm assignments shown as an M:N diamond) and one complete connected relational schema (15 tables, 28 foreign keys), each supplied as PNG and editable Draw.io.
+Team details and lab B1 are maintained in `docs/tools/submission_content.py`. The technical document includes the test plan, all entity justifications, the complete relationship register, and actual live assistant answers. The poster PDF is A1 landscape; `docs/Poster.pptx` provides an editable PowerPoint version with separate text, section boxes, ER primitives and artwork images. There is one conceptual Chen ER diagram (11 core entities, with farmer-to-farm assignments shown as an M:N diamond) and one complete connected relational schema (15 tables, 28 foreign keys), each supplied as PNG and editable Draw.io.
 
 ## Project structure
 ```

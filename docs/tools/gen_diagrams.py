@@ -101,17 +101,17 @@ class Scene:
     def shifted(self,p):return (p[0]+self.shift[0],p[1]+self.shift[1])
     def shape(self,i,kind,box,label,fs=12,key=False,fill='white'):
         x,y,w,h=box;x,y=self.shifted((x,y));self.boxes[i]=(x,y,w,h)
-        if kind=='ellipse':patch=Ellipse((x+w/2,y+h/2),w,h,fc=fill,ec='#40594c',lw=1.15)
-        elif kind=='diamond':patch=Polygon([(x,y+h/2),(x+w/2,y),(x+w,y+h/2),(x+w/2,y+h)],fc=fill,ec='#40594c',lw=1.15)
-        else:patch=Rectangle((x,y),w,h,fc=fill,ec='#40594c',lw=1.2)
+        if kind=='ellipse':patch=Ellipse((x+w/2,y+h/2),w,h,fc=fill,ec='#102d1c',lw=2.8)
+        elif kind=='diamond':patch=Polygon([(x,y+h/2),(x+w/2,y),(x+w,y+h/2),(x+w/2,y+h)],fc=fill,ec='#102d1c',lw=2.8)
+        else:patch=Rectangle((x,y),w,h,fc=fill,ec='#102d1c',lw=2.8)
         self.ax.add_patch(patch)
-        self.ax.text(x+w/2,y+h/2,label,fontsize=fs,ha='center',va='center',fontweight='bold' if kind=='rectangle' else 'normal',zorder=4)
+        self.ax.text(x+w/2,y+h/2,label,fontsize=fs,ha='center',va='center',fontweight='bold',zorder=4)
         if key:
             tw=min(w-16,len(label)*fs*.53)
             self.ax.plot([x+w/2-tw/2,x+w/2+tw/2],[y+h/2+fs*.58]*2,color='#243c2f',lw=.7,zorder=5)
         val=html.escape(label).replace('\n','<br>')
         if key:val='<u>'+val+'</u>'
-        style=f'whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize={fs};fillColor={fill};strokeColor=#40594c;'
+        style=f'whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize={fs};fillColor={fill};strokeColor=#102d1c;strokeWidth=2.8;'
         style+= 'ellipse;' if kind=='ellipse' else 'rhombus;' if kind=='diamond' else 'rounded=0;fontStyle=1;'
         c=ET.SubElement(self.root,'mxCell',id=i,value=val,style=style,vertex='1',parent='1')
         ET.SubElement(c,'mxGeometry',x=str(x),y=str(y),width=str(w),height=str(h),attrib={'as':'geometry'})
@@ -123,13 +123,13 @@ class Scene:
         ET.SubElement(c,'mxGeometry',x=str(x-w/2),y=str(y-8),width=str(w),height='16',attrib={'as':'geometry'})
     def line(self,i,source,target,points,arrow=False,color='#66786c',orthogonal=True):
         points=[self.shifted(p) for p in simplify(points)]
-        self.ax.plot([p[0] for p in points],[p[1] for p in points],color=color,lw=.85,zorder=0)
+        self.ax.plot([p[0] for p in points],[p[1] for p in points],color='#102d1c' if not arrow else color,lw=3.2 if not arrow else .85,zorder=0)
         if arrow and len(points)>1:self.ax.annotate('',xy=points[-1],xytext=points[-2],arrowprops=dict(arrowstyle='-|>',lw=.9,color=color),zorder=1)
         def anchor(n,p):
             x,y,w,h=self.boxes[n]
             return min(1,max(0,(p[0]-x)/w)),min(1,max(0,(p[1]-y)/h))
         sx,sy=anchor(source,points[0]);tx,ty=anchor(target,points[-1])
-        c=ET.SubElement(self.root,'mxCell',id=i,value='',style=f'edgeStyle={"orthogonalEdgeStyle" if orthogonal else "none"};rounded=0;html=1;exitX={sx};exitY={sy};exitPerimeter=0;entryX={tx};entryY={ty};entryPerimeter=0;endArrow={"block" if arrow else "none"};startArrow=none;strokeColor={color};jumpStyle=arc;',edge='1',parent='1',source=source,target=target)
+        c=ET.SubElement(self.root,'mxCell',id=i,value='',style=f'edgeStyle={"orthogonalEdgeStyle" if orthogonal else "none"};rounded=0;html=1;exitX={sx};exitY={sy};exitPerimeter=0;entryX={tx};entryY={ty};entryPerimeter=0;endArrow={"block" if arrow else "none"};startArrow=none;strokeWidth={3.2 if not arrow else .85};strokeColor={'#102d1c' if not arrow else color};jumpStyle=arc;',edge='1',parent='1',source=source,target=target)
         g=ET.SubElement(c,'mxGeometry',relative='1',attrib={'as':'geometry'})
         a=ET.SubElement(g,'Array',attrib={'as':'points'})
         for x,y in points[1:-1]:ET.SubElement(a,'mxPoint',x=str(x),y=str(y))
@@ -178,7 +178,7 @@ def er(tables,fks,uniq):
         for (column,label),(dx,dy) in zip(attrs,offsets):
             key=next(r['k']=='PRI' for r in rows if r['c']==column)
             aid='attr_'+t+'_'+column;ox,oy=x+dx,y+dy
-            scene.shape(aid,'ellipse',(ox-80,oy-22,160,44),label,fs=14,key=key)
+            scene.shape(aid,'ellipse',(ox-80,oy-22,160,44),label,fs=18,key=key)
             k=min(120/abs(dx) if dx else 1e6,30/abs(dy))
             start=(x+dx*k,y+dy*k)
             ex,ey=x-ox,y-oy;d=math.sqrt((ex/80)**2+(ey/22)**2)
@@ -186,8 +186,8 @@ def er(tables,fks,uniq):
     for i,f in enumerate(fks):
         name='r'+str(i);x,y=relpos[f['t'],f['c']]
         verb='Assigned to' if f['c']=='_assignment' else REL[f['t'],f['c']]
-        if len(verb)>12:verb=verb.replace(' ','\n',1)
-        scene.shape(name,'diamond',(x-82,y-44,164,88),verb,fs=16,fill='#fcfbf6')
+        if len(verb)>11:verb=verb.replace(' ','\n',1)
+        scene.shape(name,'diamond',(x-82,y-44,164,88),verb,fs=18,fill='#fcfbf6')
         centers[name]=(x,y);obstacles[name]=(x-82,y-44,164,88)
     ports=[];anchors=[];wires=[]
     for i,f in enumerate(fks):
@@ -198,7 +198,9 @@ def er(tables,fks,uniq):
             diamond='r'+str(i);ex,ey=centers[entity];rx,ry=centers[diamond]
             # All entity ports are lateral, clear of the attribute ovals.
             eside=1 if rx>ex or (rx==ex and index==0) else -1
-            dside=-1 if ex<rx or (ex==rx and index==0) else 1
+            parentx=centers[f['rt']][0];childx=centers[f['t']][0]
+            parentside=-1 if parentx<=childx else 1
+            dside=parentside if index==0 else -parentside
             eb=obstacles[entity];db=obstacles[diamond]
             ports.append(((ex+eside*(eb[2]/2+22),ey),(rx+dside*(db[2]/2+22),ry)))
             anchors.append(((ex+eside*120,ey),(rx+dside*82,ry)))
@@ -206,7 +208,7 @@ def er(tables,fks,uniq):
     for i,((source,target,card),points,(start,end)) in enumerate(zip(wires,route_schema(obstacles,ports),anchors)):
         scene.line('rel_edge_'+str(i),source,target,[start]+points+[end])
         # Put cardinalities beside the diamond, away from all entity titles.
-        scene.text((points[-1][0],points[-1][1]-13),card,14)
+        scene.text((points[-1][0],points[-1][1]-15),card,16)
     scene.save('ER_diagram')
 
 
@@ -297,7 +299,7 @@ def schema(tables,fks,uniq):
             scene.ax.text(x+33+fw*textscale,yy,r['ty'].upper(),fontsize=9*textscale,va='center',color='#42594b')
             scene.ax.text(x+25+ww-6,yy,tags,fontsize=8*textscale,ha='right',va='center',color='#526b5a')
             htmlrows.append(html.escape(r['c']+' : '+r['ty'].upper()+'   '+tags)+'<br>')
-        cell=scene.root.find(f"mxCell[@id='{t}']");cell.set('value',''.join(htmlrows));cell.set('style','rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=11;fillColor=#edf2f9;strokeColor=#40594c;')
+        cell=scene.root.find(f"mxCell[@id='{t}']");cell.set('value',''.join(htmlrows));cell.set('style','rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=11;fillColor=#edf2f9;strokeColor=#102d1c;strokeWidth=2.8;')
     ports=[];anchors=[]
     for f in fks:
         child,parent=f['t'],f['rt'];x,y,ww,hh=boxes[child];px,py,pw,ph=boxes[parent]

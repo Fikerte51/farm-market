@@ -34,6 +34,7 @@ def build_poster(docs, team, lab, results):
     c.scale(W/1456,H/1088)
     c.drawImage(str(Path(__file__).parent/'assets/poster_background.png'),0,0,1456,1088)
 
+    elements=[]
     def text(txt,x,top,w,h,fs=22,color=INK,heavy=False,align=0):
         # Refuse overflow rather than painting over another panel.
         for size in [fs-i*.25 for i in range(int((fs-10)*4)+1)]:
@@ -42,6 +43,7 @@ def build_poster(docs, team, lab, results):
             p=Paragraph(txt,style);pw,ph=p.wrap(w,h)
             if ph<=h:break
         else:raise ValueError('Poster text does not fit: '+txt)
+        elements.append(dict(text=txt,x=x,y=top,w=w,h=h,fs=size,color=color,bold=heavy,align=align))
         p.drawOn(c,x,1088-top-ph)
         return ph
     def heading(txt,x,top,w,fs=28):
@@ -85,7 +87,7 @@ def build_poster(docs, team, lab, results):
          'Farmer-to-farm assignments are M:N in the conceptual ER.',475,387,477,44,18)
     # The same canonical ER used by the technical document and editable source.
     picture('ER_diagram.png',462,433,494,259)
-    text('Conceptual Chen ER | Full-size PNG and editable Draw.io on GitHub',476,697,475,22,14,GREEN,align=1)
+    text('Conceptual Chen ER | Farmer-to-farm assignment shown as M:N',476,697,475,22,14,GREEN,align=1)
 
     heading('6. TECHNOLOGY STACK',464,743,489,32)
     for x,w,label in [(461,83,'Python'),(557,91,'MySQL 8<br/>Database'),(664,94,'Streamlit<br/>GUI'),
@@ -121,5 +123,6 @@ def build_poster(docs, team, lab, results):
     text('Atomic transactions prevent<br/>partial updates on failure',84,1013,335,31,18)
     text(f'{passed} tests pass: valid, invalid, boundary &amp; concurrency',462,980,384,24,18)
     text(f'{verified} live Gemini answers verified against SQL',462,1013,384,24,18)
-    text('COSC444  |  Lab '+lab+'  |  github.com/Fikerte51/farm-market',100,1055,1256,25,18,'#fffced',True,1)
+    text('COSC444 Database Systems  |  Lab '+lab,100,1055,1256,25,18,'#fffced',True,1)
     c.showPage();c.save()
+    return elements
