@@ -15,6 +15,9 @@ from reportlab.platypus import Paragraph
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from PIL import Image
+from vector_diagrams import pdf_size,merge_diagrams
+
+ER_FRAME=(462,380,494,310)
 
 GREEN='#004b2c'; INK='#142d20'
 
@@ -35,6 +38,7 @@ def build_poster(docs, team, lab, results):
     c.drawImage(str(Path(__file__).parent/'assets/poster_background.png'),0,0,1456,1088)
 
     elements=[]
+    vector_placements=[]
     def text(txt,x,top,w,h,fs=22,color=INK,heavy=False,align=0):
         # Refuse overflow rather than painting over another panel.
         for size in [fs-i*.25 for i in range(int((fs-10)*4)+1)]:
@@ -49,9 +53,15 @@ def build_poster(docs, team, lab, results):
     def heading(txt,x,top,w,fs=28):
         text(txt,x,top,w,45,fs,'#ffffff',True,1)
     def picture(name,x,top,w,h):
-        path=docs/name;iw,ih=Image.open(path).size
+        path=docs/name
+        vector=path.with_suffix('.pdf')
+        iw,ih=pdf_size(vector) if vector.is_file() else Image.open(path).size
         scale=min(w/iw,h/ih);ww,hh=iw*scale,ih*scale
-        c.drawImage(str(path),x+(w-ww)/2,1088-top-(h+hh)/2,width=ww,height=hh,mask='auto')
+        px=x+(w-ww)/2;py=1088-top-(h+hh)/2
+        if vector.is_file():
+            vector_placements.append((0,vector,px*W/1456,py*H/1088,ww*W/1456,hh*H/1088))
+        else:
+            c.drawImage(str(path),px,py,width=ww,height=hh,mask='auto')
 
     # Title and verified team details.
     text('Local Farm and Market Food Availability System',238,38,1164,58,47,'#fffced',True,1)
@@ -80,14 +90,10 @@ def build_poster(docs, team, lab, results):
         text(label,x,876,w,40,18,heavy=True,align=1)
 
     heading('4. DATABASE DESIGN',464,237,488,35)
-    text('11 core business entities',474,294,478,30,24,heavy=True,align=1)
-    text('Farms, Users, Crops, CropCycles, HarvestLots, HarvestLotImages, StockMovements, '
-         'Markets, MarketRequests, Allocations and DeliveryReceipts.',475,331,477,51,20)
-    text('MySQL: 15 tables, 28 foreign keys, explicit units and validated constraints. '
-         'Farmer-to-farm assignments are M:N in the conceptual ER.',475,387,477,44,18)
-    # The same canonical ER used by the technical document and editable source.
-    picture('ER_diagram.png',462,433,494,259)
-    text('Conceptual Chen ER | Farmer-to-farm assignment shown as M:N',476,697,475,22,14,GREEN,align=1)
+    text('14 entities in the conceptual ER',474,294,478,30,24,heavy=True,align=1)
+    text('MySQL: 15 tables and 28 foreign keys. The ER includes units, request history and auditing; farmer-to-farm assignment is M:N.',475,333,477,40,18)
+    picture('ER_diagram.png',*ER_FRAME)
+    text('Chen ER: entity keys, composite locations and derived stock quantities',476,697,475,22,14,GREEN,align=1)
 
     heading('6. TECHNOLOGY STACK',464,743,489,32)
     for x,w,label in [(461,83,'Python'),(557,91,'MySQL 8<br/>Database'),(664,94,'Streamlit<br/>GUI'),
@@ -125,4 +131,5 @@ def build_poster(docs, team, lab, results):
     text(f'{verified} live Gemini answers verified against SQL',462,1013,384,24,18)
     text('COSC444 Database Systems  |  Lab '+lab,100,1055,1256,25,18,'#fffced',True,1)
     c.showPage();c.save()
+    merge_diagrams(docs/'Poster.pdf',vector_placements)
     return elements

@@ -56,19 +56,8 @@ export async function build({presentation,input}) {
  for(const y of [607,641,671,703,731])
   slide.images.add({blob:artwork,contentType:'image/png',alt:'Feature bullet',fit:'cover',position:{left:1118,top:y,width:16,height:16},
    crop:{left:1117/1456,top:606/1088,right:1-1133/1456,bottom:1-622/1088}});
- // Recreate the ER with individual editable paths, entity boxes, ovals and diamonds.
- const bounds=input.bounds,scale=Math.min(494/bounds.width,259/bounds.height),dx=462+(494-bounds.width*scale)/2,dy=433+(259-bounds.height*scale)/2;
- for(const e of input.edges) {
-  const ps=e.points.map(([x,y])=>[dx+x*scale,dy+y*scale]);
-  for(let i=1;i<ps.length;i++)line('ER '+e.id+' segment '+i,...ps[i-1],...ps[i],.65,'#102d1c');
- }
- for(const v of input.vertices) {
-  const b=v.box,pos={left:dx+b.x*scale,top:dy+b.y*scale,width:b.width*scale,height:b.height*scale};
-  const shape=slide.shapes.add({name:'ER '+v.id,geometry:v.kind==='label'?'textbox':v.kind==='ellipse'?'ellipse':v.kind==='diamond'?'diamond':'rect',
-   position:pos,fill:v.kind==='rect'?'#eef5f0':'#ffffff',line:{fill:v.kind==='label'?'none':'#102d1c',width:v.kind==='label'?0:.6}});
-  shape.text=v.text;shape.text.style={typeface:'Arial',fontSize:v.fs*scale,bold:true,color:'#071a0e',
-   alignment:'center',verticalAlignment:'middle',insets:0,wrap:'none',autoFit:'shrinkText',...(v.key?{underline:'sng'}:{})};
- }
+ // The supplied Draw.io is the authoritative source for editable ER objects.
+ addEditableDiagram(slide,input);
  // Poster copy remains independent of all section backgrounds and illustrations.
  for(const [i,t] of input.texts.entries()) {
   const sh=slide.shapes.add({name:'Poster text '+i+' '+t.text.slice(0,45),geometry:'textbox',
@@ -78,5 +67,51 @@ export async function build({presentation,input}) {
  }
  slide.speakerNotes.text='One editable poster slide. Text and section boxes are native objects. The conceptual ER has individually editable entity boxes, relationship diamonds, attribute ovals, labels and line segments. Decorative farm illustrations and icons remain separate cropped picture objects. Project facts, team names, Lab B1 and test counts come from the Farm & Market project sources.';
 
+ return {nativeShapes:slide.shapes.items.length,pictures:slide.images.items.length};
+}
+
+
+function addPosterText(slide,t,i) {
+ const shape=slide.shapes.add({name:'Poster text '+i+' '+t.text.slice(0,45),geometry:'textbox',
+  position:{left:t.x,top:t.y,width:t.w,height:t.h},fill:'none',line:{fill:'none',width:0}});
+ shape.text=t.text;shape.text.style={typeface:'Arial Narrow',fontSize:t.fs,bold:t.bold,color:t.color,
+  alignment:t.align===1?'center':'left',verticalAlignment:'top',insets:0,lineSpacing:1.13,autoFit:'shrinkText',wrap:'square'};
+}
+
+export function addEditableDiagram(slide,input) {
+ const f=input.diagram_frame||{x:462,y:380,w:494,h:310},b=input.bounds;
+ const scale=Math.min(f.w/b.width,f.h/b.height),dx=f.x+(f.w-b.width*scale)/2,dy=f.y+(f.h-b.height*scale)/2;
+ slide.shapes.add({name:'ER page background',geometry:'rect',position:{left:dx,top:dy,width:b.width*scale,height:b.height*scale},fill:'#ffffff',line:{fill:'none',width:0}});
+ function wire(name,points,color,width){
+  const minx=Math.min(...points.map(p=>p[0])),miny=Math.min(...points.map(p=>p[1]));
+  const w=Math.max(.01,Math.max(...points.map(p=>p[0]))-minx),h=Math.max(.01,Math.max(...points.map(p=>p[1]))-miny);
+  slide.shapes.add({name,geometry:'custom',position:{left:minx,top:miny,width:w,height:h},fill:'none',line:{fill:color,width},
+   customPaths:[{width:w,height:h,commands:points.map(([x,y],i)=>i?{lineTo:{x:x-minx,y:y-miny}}:{moveTo:{x:x-minx,y:y-miny}})}]});
+ }
+ for(const edge of input.edges){
+  const points=edge.points.map(([x,y])=>[dx+x*scale,dy+y*scale]);
+  if(edge.double){
+   const vx=points.at(-1)[0]-points[0][0],vy=points.at(-1)[1]-points[0][1],len=Math.hypot(vx,vy)||1;
+   for(const sign of [-1,1])wire('ER '+edge.id+' participation '+sign,points.map(([x,y])=>[x-sign*vy/len*2.5*scale,y+sign*vx/len*2.5*scale]),edge.stroke,Math.max(.15,edge.stroke_width*scale));
+  } else wire('ER '+edge.id,points,edge.stroke,Math.max(.15,edge.stroke_width*scale));
+ }
+ for(const v of input.vertices){
+  const q=v.box;const shape=slide.shapes.add({name:'ER '+v.id,geometry:v.kind==='label'?'textbox':v.kind,
+   position:{left:dx+q.x*scale,top:dy+q.y*scale,width:q.width*scale,height:q.height*scale},fill:v.fill,
+   line:{fill:v.stroke,width:v.kind==='label'?0:Math.max(.15,v.stroke_width*scale),...(v.dashed?{style:'dash'}:{})},...(v.kind==='roundRect'?{borderRadius:Math.min(q.width,q.height)*scale*.04}:{})});
+  shape.text=v.text;shape.text.style={typeface:'Arial',fontSize:v.fs*scale,bold:v.bold,italic:v.italic,color:v.color,
+   alignment:v.align,verticalAlignment:v.valign,insets:0,wrap:'square',autoFit:'shrinkText',...(v.key?{underline:'sng'}:{})};
+ }
+}
+
+export async function replacePosterDiagram({presentation,input}) {
+ const slide=presentation.slides.getItem(0);
+ const central=['11 core business entities','Farms, Users, Crops','MySQL: 15 tables','Conceptual Chen ER | Farmer'];
+ for(const shape of [...slide.shapes.items]) {
+  if(shape.name?.startsWith('ER ')||(shape.name?.startsWith('Poster text ')&&central.some(t=>shape.name.includes(t))))shape.delete();
+ }
+ addEditableDiagram(slide,input);
+ input.texts.forEach((t,i)=>{if(t.x>=474&&t.x<=476&&[294,333,697].includes(t.y))addPosterText(slide,t,i);});
+ slide.speakerNotes.text='One editable poster slide using the supplied farm_market_diagrams.zip Chen ER. The ER includes 14 entities and 27 relationship diamonds, with native editable attributes, cardinality labels and participation lines. The relational schema has 15 tables and 28 foreign keys. Decorative artwork remains separate cropped images.';
  return {nativeShapes:slide.shapes.items.length,pictures:slide.images.items.length};
 }

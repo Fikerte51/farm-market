@@ -318,6 +318,11 @@ def schema(tables,fks,uniq):
 
 
 def main():
+    # Preserve the user's edited Draw.io sources and their matching exports.
+    manifest_path=OUT/'schema_manifest.json'
+    if manifest_path.exists() and json.loads(manifest_path.read_text()).get('diagram_source')=='supplied_drawio':
+        print('Using supplied Draw.io diagrams. Edit docs/*.drawio in Draw.io and export matching PNG/PDF files; rebuild documents with docs/tools/build_pdfs.py.')
+        return
     tables,fks,uniq=introspect();er(tables,fks,uniq);schema(tables,fks,uniq)
     (OUT/'schema_manifest.json').write_text(json.dumps(dict(database=config.DB_NAME,table_count=len(tables),foreign_key_count=len(fks),tables=tables,foreign_keys=fks,notation='Conceptual Chen ER: 11 core entities; Assigned to M:N replaces user_farms. Full relational schema: all 15 tables and 28 FKs.',conceptual_scope=dict(entity_count=11,omitted_tables=['user_farms','units','request_status_history','audit_log'],note='Units are quantity domains; history/audit and actor FKs appear in the relational schema. Farmer assignments are M:N.'),relationships=[dict(f,verb='Assigned to' if f['c']=='_assignment' else REL[(f['t'],f['c'])]) for f in fks]),indent=2))
     # These generated variants are obsolete. Keep only the two canonical pairs.

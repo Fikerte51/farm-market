@@ -19,6 +19,7 @@ from reportlab.platypus import (BaseDocTemplate,Frame,Image,KeepTogether,NextPag
     PageBreak,PageTemplate,Paragraph,Spacer,Table,TableStyle)
 
 from submission_content import TEAM,LAB,ENTITIES,TEST_PLAN
+from vector_diagrams import VectorDiagram,merge_diagrams
 ROOT=Path(__file__).resolve().parents[2];DOCS=ROOT/'docs'
 GREEN=colors.HexColor('#246345');DARK=colors.HexColor('#173c2b');PALE=colors.HexColor('#edf5f0')
 styles=getSampleStyleSheet()
@@ -53,7 +54,10 @@ def table(rows,widths,style=small):
     return t
 
 
-def fitted(path,w,h):
+def fitted(path,w,h,placements=None):
+    vector=path.with_suffix('.pdf')
+    if vector.is_file() and placements is not None:
+        return VectorDiagram(vector,w,h,placements)
     iw,ih=PILImage.open(path).size;scale=min(w/iw,h/ih)
     return Image(str(path),width=iw*scale,height=ih*scale,hAlign='CENTER')
 
@@ -75,6 +79,7 @@ def footer(c,doc):
 
 
 def technical():
+    vector_placements=[]
     live=json.loads((DOCS/'live_assistant_validation.json').read_text())
     manifest=json.loads((DOCS/'schema_manifest.json').read_text())
     evidence=tests()
@@ -98,12 +103,12 @@ def technical():
        P('Cardinality and normalisation',h2),P('A required foreign key gives each child exactly one parent, while a nullable FK permits zero or one. A parent may have zero or many children unless a UNIQUE FK limits it to zero or one. For example, an allocation has at most one receipt. User_farms has a composite key; neither user_id nor farm_id is unique alone.'),
        P('Request status history versus audit log',h2),P('Request_status_history is a business timeline for a specific request. Audit_log is a security and operational record across the application, including failures that do not produce a request transition. Keeping them separate avoids forcing unrelated security events into a business lifecycle.')]
     for prefix,section in [('ER_diagram','3. Connected ER diagram'),('relational_schema','4. Connected relational schema')]:
-        note=('Chen notation follows the classroom convention: each entity appears once as a rectangle, its selected attributes are ovals, and named relationship diamonds connect the actual entities. Identifiers are underlined. The key-only user_farms table is represented by an Assigned to M:N relationship between Users (farmer accounts) and Farms. Units are quantity domains; history, audit and actor details appear in the full relational schema.' if prefix=='ER_diagram' else 'Every table appears once. Orthogonal FK connectors link child fields directly to their referenced parent keys. Arrows point to the parent. Brown = user FKs; purple = unit FKs; green = other FKs. PK = primary key; FK = foreign key; UQ = unique; NN = not null.')
+        note=('Chen notation follows the classroom convention: each entity appears once as a rectangle, its non-FK attributes are ovals, and named relationship diamonds connect the actual entities. Identifiers are underlined. The key-only user_farms table is represented by an Assigned to M:N relationship between Users (farmer accounts) and Farms. Units, request status history, audit records and responsible-user relationships are included. Dashed red ovals are derived attributes; blue location ovals combine component attributes. Single and double relationship lines show partial and total participation.' if prefix=='ER_diagram' else 'Every table appears once. Orthogonal FK connectors link child fields directly to their referenced parent keys. Arrows point to the parent. Connector colours identify the referenced table. PK = primary key; FK = foreign key; UQ = unique; UQ1 = composite unique; NN = not null; AI = auto-increment. The bottom panel lists CHECK constraints and triggers.')
         s.extend([NextPageTemplate('diagram'),PageBreak(),P(section,h1),P(note,small),
-            P('The ER contains the 11 core business entities; the relational schema contains all 15 tables and 28 foreign keys. M:N expresses many farmers assigned to many farms. For other relationships, 1 means exactly one, 0..1 optional one, and 0..N optional many. Each allocation has at most one receipt.',small),
-            fitted(DOCS/(prefix+'.png'),landscape(A2)[0]-36*mm,landscape(A2)[1]-67*mm)])
+            P('The supplied ER contains 14 entities and 27 relationship diamonds representing the 28 foreign keys in the 15-table relational schema. Two user_farms foreign keys map to one M:N assigned-to diamond. Cardinality labels 1, N and M express relationship ratios; single/double lines distinguish partial/total participation. Each allocation has at most one receipt.',small),
+            fitted(DOCS/(prefix+'.png'),landscape(A2)[0]-36*mm,landscape(A2)[1]-67*mm,vector_placements)])
     s.extend([NextPageTemplate('portrait'),PageBreak(),P('5. Relationship register',h1),
-        P(f"All {manifest['foreign_key_count']} foreign keys from the MySQL catalogue are represented in the relational schema. The conceptual ER deliberately omits implementation-only tables and user responsibility links for readability; those details are preserved here and in the schema. Each diagram has one PNG and one editable, single-page Draw.io source."),
+        P(f"All {manifest['foreign_key_count']} foreign keys from the MySQL catalogue are represented in the relational schema. The ER includes every table except the key-only user_farms junction, represented by an assigned-to M:N relationship. Each diagram has one editable Draw.io source, a PNG preview and a vector PDF used in the documents."),
         table([['Child FK','Parent key','Relationship']]+[[f["t"]+'.'+f['c'],f['rt']+'.'+f['rc'],f['verb']] for f in manifest['relationships']],[width*.36,width*.34,width*.30]),
         PageBreak(),P('6. Stock, shortfalls and transactions',h1),
         P('Stock is derived, not stored: on hand = harvest additions + positive corrections - deliveries - losses - negative corrections. Reserved = reservations - releases - deliveries. Available = on hand - reserved. Forecasts in crop_cycles never contribute to physical stock.'),
@@ -146,6 +151,7 @@ def technical():
         P('Install requirements and MySQL 8; copy .env.example to .env and configure local credentials. For a new disposable demo database run python init_db.py; this resets demo records. For an existing database use the non-destructive upgrade instead. Start with streamlit run app.py. The demo password is Demo@1234.'),
         P('The assistant needs internet access and a Gemini API key and is subject to model quotas. The validator paces calls, preserves verified answers and reports failures rather than fabricating success. Sessions are server-memory demo sessions. A returned-to-farm declaration is a user attestation, not an automated quality inspection. Backups require both MySQL and the image/upload folders.')])
     doc.build(s)
+    merge_diagrams(DOCS/'Technical_Document.pdf',vector_placements)
 
 
 def poster():

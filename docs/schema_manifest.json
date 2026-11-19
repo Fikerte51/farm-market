@@ -995,16 +995,14 @@
       "rc": "market_id"
     }
   ],
-  "notation": "Conceptual Chen ER: 11 core entities; Assigned to M:N replaces user_farms. Full relational schema: all 15 tables and 28 FKs.",
+  "notation": "Supplied Chen ER: 14 entities and 27 relationship diamonds. Complete relational schema: 15 tables and 28 foreign keys.",
   "conceptual_scope": {
-    "entity_count": 11,
+    "entity_count": 14,
+    "relationship_count": 27,
     "omitted_tables": [
-      "user_farms",
-      "units",
-      "request_status_history",
-      "audit_log"
+      "user_farms"
     ],
-    "note": "Units are quantity domains; history/audit and actor FKs appear in the relational schema. Farmer assignments are M:N."
+    "note": "The M:N assigned-to relationship maps to user_farms. Units, history, audit and responsible-user relationships are included. Dashed ovals are derived attributes; blue location ovals are composite attributes."
   },
   "relationships": [
     {
@@ -1203,5 +1201,15 @@
       "rc": "market_id",
       "verb": "Employs buyer"
     }
-  ]
+  ],
+  "diagram_source": "supplied_drawio",
+  "diagram_source_archive": "farm_market_diagrams.zip",
+  "diagram_sha256": {
+    "ER_diagram.png": "4f0fac4be435896a6b9b12435effd70b8cfd08c08f3d8c4ad509b9286a68fec8",
+    "ER_diagram.drawio": "ba793d2cdcfe9dcddd2c4fc956b2fb633c3427d7f44c054ce1f88a2c9335a5e5",
+    "ER_diagram.pdf": "f1cc31aca30a21f9a403b0514873b9b5d3f51c7aabcfce6046dc03f2130adaff",
+    "relational_schema.png": "d7ada68326cd719a51fa1777606bace3de81a2ac4b8345c282fd5718f1c8ae58",
+    "relational_schema.drawio": "dabd0db9587099b455d666f3c45c05e53932f0a280a15e9534d08973aa96d763",
+    "relational_schema.pdf": "1c5bbe43d36720b76029aa9194549f66c6f2bf08c8fdae3d9ec9032fe6a08369"
+  }
 }
