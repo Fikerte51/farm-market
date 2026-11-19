@@ -106,6 +106,7 @@ def reference(user):
             fac = c4.number_input("Factor to base unit (kg for mass)", value=1.0, format="%.6f")
             if st.form_submit_button("Add unit"):
                 ui.run(admin.add_unit, user, code, nm, cat, fac, success="Unit added.", rerun=True)
+        _toggle(user, "units", rows, "unit_code", "unit_name")
 
     with t_markets:
         rows = queries.markets(False)
