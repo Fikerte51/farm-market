@@ -22,7 +22,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "farm_market")
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or ""
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 UPLOAD_DIR = BASE_DIR / "uploads"          # farmer uploads (stored on disk, path stored in MySQL)
 MAX_IMAGE_BYTES = 5 * 1024 * 1024          # 5 MB
